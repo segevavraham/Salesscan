@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Coach AI - Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎯 Sales Coach AI Settings</h1>
+      <p class="subtitle">Configure your AI sales coaching assistant</p>
+    </header>
+
+    <div class="content">
+      <!-- General Settings -->
+      <section class="settings-section">
+        <h2>General Settings</h2>
+
+        <div class="setting-item">
+          <label class="setting-label">
+            <input type="checkbox" id="autoStart" />
+            <span>Auto-start coaching when joining a meeting</span>
+          </label>
+          <p class="setting-description">Automatically begin recording and analysis when you join a supported meeting platform</p>
+        </div>
+
+        <div class="setting-item">
+          <label class="setting-label">
+            <input type="checkbox" id="showRealTimeSuggestions" checked />
+            <span>Show real-time suggestions</span>
+          </label>
+          <p class="setting-description">Display AI suggestions during the meeting</p>
+        </div>
+
+        <div class="setting-item">
+          <label class="setting-label">
+            <input type="checkbox" id="recordTranscripts" checked />
+            <span>Save meeting transcripts</span>
+          </label>
+          <p class="setting-description">Store transcripts for future review and analysis</p>
+        </div>
+      </section>
+
+      <!-- Language Settings -->
+      <section class="settings-section">
+        <h2>Language & Speech Recognition</h2>
+
+        <div class="setting-item">
+          <label for="language">Recognition Language</label>
+          <select id="language" class="setting-select">
+            <option value="he-IL">Hebrew (עברית)</option>
+            <option value="en-US">English (US)</option>
+            <option value="en-GB">English (UK)</option>
+            <option value="es-ES">Spanish (Español)</option>
+            <option value="fr-FR">French (Français)</option>
+            <option value="de-DE">German (Deutsch)</option>
+          </select>
+          <p class="setting-description">Select the language for speech recognition</p>
+        </div>
+
+        <div class="setting-item">
+          <label class="setting-label">
+            <input type="checkbox" id="multiLanguage" />
+            <span>Multi-language detection</span>
+          </label>
+          <p class="setting-description">Automatically detect and switch between languages</p>
+        </div>
+      </section>
+
+      <!-- AI Provider Settings -->
+      <section class="settings-section">
+        <h2>AI Provider Configuration</h2>
+
+        <div class="setting-item">
+          <label for="aiProvider">AI Provider</label>
+          <select id="aiProvider" class="setting-select">
+            <option value="openai">OpenAI (GPT-4)</option>
+            <option value="anthropic">Anthropic (Claude)</option>
+            <option value="custom">Custom Backend</option>
+          </select>
+          <p class="setting-description">Choose your AI provider for generating suggestions</p>
+        </div>
+
+        <div class="setting-item">
+          <label for="apiKey">API Key</label>
+          <input type="password" id="apiKey" class="setting-input" placeholder="Enter your API key" />
+          <p class="setting-description">Your API key will be stored securely locally</p>
+        </div>
+
+        <div class="setting-item" id="customUrlSection" style="display: none;">
+          <label for="customApiUrl">Custom API URL</label>
+          <input type="text" id="customApiUrl" class="setting-input" placeholder="https://your-api.com/endpoint" />
+          <p class="setting-description">URL for your custom backend API</p>
+        </div>
+
+        <div class="setting-item">
+          <label for="model">AI Model</label>
+          <select id="model" class="setting-select">
+            <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
+            <option value="gpt-4">GPT-4</option>
+            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+            <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+            <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Suggestion Settings -->
+      <section class="settings-section">
+        <h2>Suggestion Preferences</h2>
+
+        <div class="setting-item">
+          <label for="suggestionFrequency">Suggestion Frequency</label>
+          <select id="suggestionFrequency" class="setting-select">
+            <option value="high">High - After every client response</option>
+            <option value="medium" selected>Medium - When significant topics arise</option>
+            <option value="low">Low - Only for critical moments</option>
+          </select>
+        </div>
+
+        <div class="setting-item">
+          <label class="setting-label">
+            <input type="checkbox" id="autoHideSuggestions" checked />
+            <span>Auto-hide suggestions after 30 seconds</span>
+          </label>
+        </div>
+
+        <div class="setting-item">
+          <label class="setting-label">
+            <input type="checkbox" id="detectBuyingSignals" checked />
+            <span>Detect buying signals</span>
+          </label>
+          <p class="setting-description">Highlight when prospects show interest or readiness to buy</p>
+        </div>
+
+        <div class="setting-item">
+          <label class="setting-label">
+            <input type="checkbox" id="detectObjections" checked />
+            <span>Detect objections</span>
+          </label>
+          <p class="setting-description">Alert when prospects raise concerns or objections</p>
+        </div>
+      </section>
+
+      <!-- Notification Settings -->
+      <section class="settings-section">
+        <h2>Notifications</h2>
+
+        <div class="setting-item">
+          <label class="setting-label">
+            <input type="checkbox" id="soundNotifications" />
+            <span>Sound notifications</span>
+          </label>
+          <p class="setting-description">Play a sound when new suggestions appear</p>
+        </div>
+
+        <div class="setting-item">
+          <label class="setting-label">
+            <input type="checkbox" id="desktopNotifications" />
+            <span>Desktop notifications</span>
+          </label>
+          <p class="setting-description">Show browser notifications for important insights</p>
+        </div>
+      </section>
+
+      <!-- Privacy Settings -->
+      <section class="settings-section">
+        <h2>Privacy & Data</h2>
+
+        <div class="setting-item">
+          <label class="setting-label">
+            <input type="checkbox" id="dataRetention" checked />
+            <span>Keep conversation history</span>
+          </label>
+          <p class="setting-description">Store anonymized conversation data to improve suggestions over time</p>
+        </div>
+
+        <div class="setting-item">
+          <label for="retentionDays">Data retention period</label>
+          <select id="retentionDays" class="setting-select">
+            <option value="7">7 days</option>
+            <option value="30" selected>30 days</option>
+            <option value="90">90 days</option>
+            <option value="365">1 year</option>
+          </select>
+        </div>
+
+        <div class="setting-item">
+          <button class="danger-btn" id="clearDataBtn">Clear All Data</button>
+          <p class="setting-description">Delete all stored transcripts, suggestions, and history</p>
+        </div>
+      </section>
+
+      <!-- Action Buttons -->
+      <div class="actions">
+        <button class="primary-btn" id="saveBtn">Save Settings</button>
+        <button class="secondary-btn" id="resetBtn">Reset to Defaults</button>
+      </div>
+
+      <!-- Status Message -->
+      <div class="status-message" id="statusMessage"></div>
+    </div>
+
+    <footer>
+      <p>Sales Coach AI v1.0.0 • <a href="#" id="privacyLink">Privacy Policy</a> • <a href="#" id="supportLink">Support</a></p>
+    </footer>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

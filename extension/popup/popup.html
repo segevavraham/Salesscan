@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Coach AI</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <span class="icon">🎯</span>
+        <h1>Sales Coach AI</h1>
+      </div>
+      <div class="status-badge" id="statusBadge">
+        <span class="status-dot"></span>
+        <span id="statusText">Ready</span>
+      </div>
+    </div>
+
+    <!-- Main Controls -->
+    <div class="main-section">
+      <div class="recording-status" id="recordingStatus">
+        <div class="status-icon">🎤</div>
+        <p class="status-message">Start a meeting to begin coaching</p>
+      </div>
+
+      <button class="primary-btn" id="toggleBtn">
+        <span id="btnIcon">▶</span>
+        <span id="btnText">Start Coaching</span>
+      </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-section">
+      <div class="stat-item">
+        <span class="stat-label">Sessions Today</span>
+        <span class="stat-value" id="sessionsToday">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Suggestions</span>
+        <span class="stat-value" id="suggestionsCount">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Duration</span>
+        <span class="stat-value" id="sessionDuration">0m</span>
+      </div>
+    </div>
+
+    <!-- Recent Suggestions -->
+    <div class="recent-section">
+      <h3>Recent Suggestions</h3>
+      <div id="recentSuggestions" class="suggestions-list">
+        <p class="empty-state">No suggestions yet</p>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <button class="action-btn" id="settingsBtn">
+        <span>⚙️</span>
+        Settings
+      </button>
+      <button class="action-btn" id="historyBtn">
+        <span>📊</span>
+        History
+      </button>
+      <button class="action-btn" id="helpBtn">
+        <span>❓</span>
+        Help
+      </button>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>Powered by AI • <a href="#" id="upgradeLink">Upgrade to Pro</a></p>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
