@@ -19,7 +19,7 @@ class UltimateSalesCoach {
     this.suggestionWidget = null;
     this.transcriptionOverlay = null;
     this.waveformVisualizer = null;
-    this.analyticsD ashboard = null;
+    this.analyticsDashboard = null;
 
     // Services
     this.assemblyAI = null;

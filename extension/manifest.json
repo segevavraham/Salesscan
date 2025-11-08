@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Sales Coach AI",
-  "version": "1.0.0",
-  "description": "AI-powered sales coach that provides real-time suggestions during meetings",
+  "version": "2.1.0",
+  "description": "Enterprise-grade AI sales coach with real-time streaming transcription, live waveform visualization, proactive coaching, and intelligent meeting insights",
   "permissions": [
     "activeTab",
     "tabCapture",
@@ -27,12 +27,13 @@
         "https://*.webex.com/*"
       ],
       "js": [
-        "content/content-script.js"
+        "content/ultimate-content-script.js"
       ],
       "css": [
         "styles/overlay.css"
       ],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "type": "module"
     }
   ],
   "action": {
