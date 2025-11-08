@@ -1,13 +1,15 @@
 {
   "name": "sales-coach-chrome-extension",
-  "version": "1.0.0",
-  "description": "AI-powered sales coach Chrome extension with real-time meeting analysis and suggestions",
+  "version": "2.0.0",
+  "description": "Enterprise-grade AI sales coach with real-time streaming transcription, sentiment analysis, and intelligent suggestions",
   "type": "module",
   "scripts": {
     "build": "webpack --mode production",
     "dev": "webpack --mode development --watch",
     "test": "jest",
-    "lint": "eslint extension/**/*.js"
+    "lint": "eslint extension/**/*.js",
+    "format": "prettier --write extension/**/*.{js,css,html}",
+    "analyze": "webpack --mode production --analyze"
   },
   "keywords": [
     "chrome-extension",
@@ -15,7 +17,13 @@
     "ai",
     "coaching",
     "meetings",
-    "speech-recognition"
+    "speech-recognition",
+    "real-time",
+    "streaming",
+    "assemblyai",
+    "openai",
+    "sentiment-analysis",
+    "conversation-intelligence"
   ],
   "author": "",
   "license": "ISC",
@@ -27,11 +35,17 @@
     "css-loader": "^6.8.1",
     "eslint": "^8.50.0",
     "jest": "^29.7.0",
+    "prettier": "^3.0.0",
     "style-loader": "^3.3.3",
     "webpack": "^5.89.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "webpack-bundle-analyzer": "^4.9.0"
   },
   "dependencies": {
     "recordrtc": "^5.6.2"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
   }
 }
