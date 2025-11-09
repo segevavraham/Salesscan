@@ -26,6 +26,7 @@ interface Config {
   // API Keys
   openaiApiKey: string;
   assemblyaiApiKey: string;
+  elevenlabsApiKey: string;
 
   // CORS
   corsOrigin: string;
@@ -96,6 +97,7 @@ function validateEnv(): Config {
     // API Keys
     openaiApiKey: process.env.OPENAI_API_KEY || '',
     assemblyaiApiKey: process.env.ASSEMBLYAI_API_KEY || '',
+    elevenlabsApiKey: process.env.ELEVENLABS_API_KEY || '',
 
     // CORS
     corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',

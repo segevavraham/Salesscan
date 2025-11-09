@@ -10,6 +10,7 @@ import MeetingsPage from './pages/meeting/MeetingsPage';
 import MeetingDetailPage from './pages/meeting/MeetingDetailPage';
 import LiveMeetingPage from './pages/meeting/LiveMeetingPage';
 import AnalyticsPage from './pages/analytics/AnalyticsPage';
+import AdminDashboard from './pages/admin/AdminDashboard';
 
 // Components
 import Layout from './components/common/Layout';
@@ -55,6 +56,16 @@ function App() {
         <Route path="meetings/live/:id" element={<LiveMeetingPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
       </Route>
+
+      {/* Admin routes */}
+      <Route
+        path="/admin"
+        element={
+          <PrivateRoute>
+            <AdminDashboard />
+          </PrivateRoute>
+        }
+      />
 
       {/* 404 */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
