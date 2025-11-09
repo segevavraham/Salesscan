@@ -24,6 +24,11 @@ import {
   Avatar,
   Typography,
   Tooltip,
+  Checkbox,
+  Alert,
+  DialogContentText,
+  Collapse,
+  Stack,
 } from '@mui/material';
 import {
   Search,
@@ -35,6 +40,10 @@ import {
   Email,
   Phone,
   PersonAdd,
+  DeleteSweep,
+  GroupRemove,
+  Security,
+  Warning,
 } from '@mui/icons-material';
 
 interface User {
@@ -86,6 +95,22 @@ export default function UsersManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    severity: 'warning' | 'error';
+    action: () => void;
+  }>({
+    open: false,
+    title: '',
+    message: '',
+    severity: 'warning',
+    action: () => {},
+  });
+  const [bulkAction, setBulkAction] = useState<'suspend' | 'delete' | 'role' | null>(null);
+  const [bulkRole, setBulkRole] = useState<User['role']>('USER');
 
   const getRoleColor = (role: User['role']) => {
     const colors = {
@@ -110,16 +135,96 @@ export default function UsersManagement() {
     setOpenDialog(true);
   };
 
+  const openConfirmDialog = (
+    title: string,
+    message: string,
+    action: () => void,
+    severity: 'warning' | 'error' = 'warning'
+  ) => {
+    setConfirmDialog({ open: true, title, message, severity, action });
+  };
+
+  const closeConfirmDialog = () => {
+    setConfirmDialog({ ...confirmDialog, open: false });
+  };
+
   const handleDelete = (userId: string) => {
-    if (confirm('Are you sure you want to delete this user?')) {
-      setUsers(users.filter((u) => u.id !== userId));
-    }
+    const user = users.find((u) => u.id === userId);
+    openConfirmDialog(
+      'Delete User',
+      `Are you sure you want to permanently delete "${user?.name}"? This action cannot be undone.`,
+      () => {
+        setUsers(users.filter((u) => u.id !== userId));
+        closeConfirmDialog();
+      },
+      'error'
+    );
   };
 
   const handleSuspend = (userId: string) => {
-    setUsers(
-      users.map((u) => (u.id === userId ? { ...u, status: 'suspended' as const } : u))
+    const user = users.find((u) => u.id === userId);
+    openConfirmDialog(
+      'Suspend User',
+      `Are you sure you want to suspend "${user?.name}"? They will lose access to the platform until reactivated.`,
+      () => {
+        setUsers(users.map((u) => (u.id === userId ? { ...u, status: 'suspended' as const } : u)));
+        closeConfirmDialog();
+      }
     );
+  };
+
+  // Bulk selection handlers
+  const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.checked) {
+      setSelectedUserIds(filteredUsers.map((user) => user.id));
+    } else {
+      setSelectedUserIds([]);
+    }
+  };
+
+  const handleSelectUser = (userId: string) => {
+    setSelectedUserIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
+  };
+
+  const isAllSelected = filteredUsers.length > 0 && selectedUserIds.length === filteredUsers.length;
+  const isSomeSelected = selectedUserIds.length > 0 && selectedUserIds.length < filteredUsers.length;
+
+  // Bulk action handlers
+  const handleBulkSuspend = () => {
+    openConfirmDialog(
+      'Suspend Selected Users',
+      `Are you sure you want to suspend ${selectedUserIds.length} user(s)? They will lose access to the platform.`,
+      () => {
+        setUsers(
+          users.map((u) => (selectedUserIds.includes(u.id) ? { ...u, status: 'suspended' as const } : u))
+        );
+        setSelectedUserIds([]);
+        closeConfirmDialog();
+      }
+    );
+  };
+
+  const handleBulkDelete = () => {
+    openConfirmDialog(
+      'Delete Selected Users',
+      `⚠️ DANGER: You are about to permanently delete ${selectedUserIds.length} user(s). This action CANNOT be undone. All their data, meetings, and history will be lost forever.`,
+      () => {
+        setUsers(users.filter((u) => !selectedUserIds.includes(u.id)));
+        setSelectedUserIds([]);
+        closeConfirmDialog();
+      },
+      'error'
+    );
+  };
+
+  const handleBulkChangeRole = () => {
+    setUsers(
+      users.map((u) => (selectedUserIds.includes(u.id) ? { ...u, role: bulkRole } : u))
+    );
+    setSelectedUserIds([]);
+    setBulkAction(null);
   };
 
   const filteredUsers = users.filter(
@@ -166,11 +271,93 @@ export default function UsersManagement() {
         }}
       />
 
+      {/* Bulk Actions Toolbar */}
+      <Collapse in={selectedUserIds.length > 0}>
+        <Alert
+          severity="info"
+          icon={<CheckCircle />}
+          sx={{
+            mb: 2,
+            background: 'linear-gradient(135deg, #667eea22 0%, #764ba244 100%)',
+            border: '2px solid #667eea',
+          }}
+          action={
+            <Stack direction="row" spacing={1}>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<Block />}
+                onClick={handleBulkSuspend}
+                sx={{ borderColor: '#f59e0b', color: '#f59e0b' }}
+              >
+                Suspend ({selectedUserIds.length})
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<Security />}
+                onClick={() => setBulkAction('role')}
+                sx={{ borderColor: '#3b82f6', color: '#3b82f6' }}
+              >
+                Change Role
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<DeleteSweep />}
+                onClick={handleBulkDelete}
+                sx={{ borderColor: '#ef4444', color: '#ef4444' }}
+              >
+                Delete ({selectedUserIds.length})
+              </Button>
+            </Stack>
+          }
+        >
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {selectedUserIds.length} user(s) selected
+          </Typography>
+        </Alert>
+      </Collapse>
+
+      {/* Bulk Role Change Dialog */}
+      <Dialog open={bulkAction === 'role'} onClose={() => setBulkAction(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Change Role for Selected Users</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <FormControl fullWidth>
+              <InputLabel>New Role</InputLabel>
+              <Select value={bulkRole} label="New Role" onChange={(e) => setBulkRole(e.target.value as User['role'])}>
+                <MenuItem value="USER">User</MenuItem>
+                <MenuItem value="TEAM_LEADER">Team Leader</MenuItem>
+                <MenuItem value="ADMIN">Admin</MenuItem>
+              </Select>
+            </FormControl>
+            <Alert severity="warning" sx={{ mt: 2 }}>
+              This will change the role for {selectedUserIds.length} user(s).
+            </Alert>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBulkAction(null)}>Cancel</Button>
+          <Button variant="contained" onClick={handleBulkChangeRole}>
+            Change Role
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Users Table */}
       <TableContainer component={Paper} elevation={2}>
         <Table>
           <TableHead>
             <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+              <TableCell padding="checkbox">
+                <Checkbox
+                  checked={isAllSelected}
+                  indeterminate={isSomeSelected}
+                  onChange={handleSelectAll}
+                  color="primary"
+                />
+              </TableCell>
               <TableCell sx={{ fontWeight: 700 }}>User</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Email</TableCell>
               <TableCell sx={{ fontWeight: 700 }}>Role</TableCell>
@@ -182,7 +369,21 @@ export default function UsersManagement() {
           </TableHead>
           <TableBody>
             {filteredUsers.map((user) => (
-              <TableRow key={user.id} hover>
+              <TableRow
+                key={user.id}
+                hover
+                selected={selectedUserIds.includes(user.id)}
+                sx={{
+                  backgroundColor: selectedUserIds.includes(user.id) ? '#667eea11' : 'inherit',
+                }}
+              >
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    checked={selectedUserIds.includes(user.id)}
+                    onChange={() => handleSelectUser(user.id)}
+                    color="primary"
+                  />
+                </TableCell>
                 <TableCell>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                     <Avatar sx={{ bgcolor: '#667eea' }}>
@@ -297,6 +498,67 @@ export default function UsersManagement() {
           <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
           <Button variant="contained" onClick={() => setOpenDialog(false)}>
             {selectedUser ? 'Update' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={confirmDialog.open}
+        onClose={closeConfirmDialog}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            border: confirmDialog.severity === 'error' ? '3px solid #ef4444' : '2px solid #f59e0b',
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            background:
+              confirmDialog.severity === 'error'
+                ? 'linear-gradient(135deg, #ef444422 0%, #dc262644 100%)'
+                : 'linear-gradient(135deg, #f59e0b22 0%, #d9770644 100%)',
+            borderBottom: confirmDialog.severity === 'error' ? '2px solid #ef4444' : '2px solid #f59e0b',
+          }}
+        >
+          <Warning
+            sx={{
+              fontSize: 32,
+              color: confirmDialog.severity === 'error' ? '#ef4444' : '#f59e0b',
+            }}
+          />
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+            {confirmDialog.title}
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Alert severity={confirmDialog.severity} sx={{ mb: 2 }}>
+            <DialogContentText sx={{ color: 'inherit', fontWeight: 600 }}>
+              {confirmDialog.message}
+            </DialogContentText>
+          </Alert>
+          {confirmDialog.severity === 'error' && (
+            <Alert severity="info" sx={{ mt: 2 }}>
+              Please double-check before proceeding. This is a destructive action.
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={closeConfirmDialog} variant="outlined">
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmDialog.action}
+            variant="contained"
+            color={confirmDialog.severity === 'error' ? 'error' : 'warning'}
+            startIcon={confirmDialog.severity === 'error' ? <Delete /> : <Warning />}
+          >
+            {confirmDialog.severity === 'error' ? 'Delete Permanently' : 'Confirm'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -15,8 +15,11 @@ import {
   FormControl,
   InputLabel,
   Alert,
+  CircularProgress,
+  Snackbar,
 } from '@mui/material';
-import { Save, RestartAlt, CloudUpload } from '@mui/icons-material';
+import { Save, RestartAlt, CloudUpload, Check } from '@mui/icons-material';
+import { SuccessBadge } from '../common/SuccessAnimation';
 
 export default function SystemSettings() {
   const [settings, setSettings] = useState({
@@ -55,13 +58,26 @@ export default function SystemSettings() {
     temperature: 0.7,
   });
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+
   const handleChange = (field: string, value: any) => {
     setSettings({ ...settings, [field]: value });
   };
 
-  const handleSave = () => {
-    // Save settings
-    alert('Settings saved successfully!');
+  const handleSave = async () => {
+    setIsLoading(true);
+
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    setIsLoading(false);
+    setShowSuccess(true);
+
+    // Auto-hide success message after 3 seconds
+    setTimeout(() => {
+      setShowSuccess(false);
+    }, 3000);
   };
 
   return (
@@ -71,19 +87,25 @@ export default function SystemSettings() {
         <Typography variant="h5" sx={{ fontWeight: 700 }}>
           ⚙️ System Settings
         </Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button variant="outlined" startIcon={<RestartAlt />}>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          {showSuccess && <SuccessBadge message="All changes saved!" />}
+          <Button variant="outlined" startIcon={<RestartAlt />} disabled={isLoading}>
             Reset to Defaults
           </Button>
           <Button
             variant="contained"
-            startIcon={<Save />}
+            startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : showSuccess ? <Check /> : <Save />}
             onClick={handleSave}
+            disabled={isLoading}
             sx={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: showSuccess
+                ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              minWidth: 200,
+              transition: 'all 0.3s ease',
             }}
           >
-            Save All Changes
+            {isLoading ? 'Saving...' : showSuccess ? 'Saved!' : 'Save All Changes'}
           </Button>
         </Box>
       </Box>

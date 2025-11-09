@@ -15,6 +15,7 @@ import {
   Switch,
   FormControlLabel,
   Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import {
   Visibility,
@@ -25,6 +26,7 @@ import {
   Delete,
   Add,
   Security,
+  Check,
 } from '@mui/icons-material';
 
 interface APIKey {
@@ -71,6 +73,7 @@ export default function APIKeysManagement() {
   const [apiKeys, setApiKeys] = useState<APIKey[]>(mockAPIKeys);
   const [visibleKeys, setVisibleKeys] = useState<Set<string>>(new Set());
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [regeneratingKey, setRegeneratingKey] = useState<string | null>(null);
 
   const toggleVisibility = (keyId: string) => {
     setVisibleKeys((prev) => {
@@ -88,6 +91,24 @@ export default function APIKeysManagement() {
     await navigator.clipboard.writeText(key);
     setCopiedKey(keyId);
     setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  const handleRegenerateKey = async (keyId: string) => {
+    setRegeneratingKey(keyId);
+
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // Generate a new mock key
+    setApiKeys((prev) =>
+      prev.map((k) =>
+        k.id === keyId
+          ? { ...k, key: `${k.key.split('-')[0]}-${Math.random().toString(36).substring(7)}` }
+          : k
+      )
+    );
+
+    setRegeneratingKey(null);
   };
 
   const maskKey = (key: string) => {
@@ -265,9 +286,17 @@ export default function APIKeysManagement() {
                   {/* Actions */}
                   <Grid item xs={12} md={2}>
                     <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                      <Tooltip title="Regenerate Key">
-                        <IconButton color="primary">
-                          <Refresh />
+                      <Tooltip title={regeneratingKey === apiKey.id ? 'Regenerating...' : 'Regenerate Key'}>
+                        <IconButton
+                          color="primary"
+                          onClick={() => handleRegenerateKey(apiKey.id)}
+                          disabled={regeneratingKey === apiKey.id}
+                        >
+                          {regeneratingKey === apiKey.id ? (
+                            <CircularProgress size={20} />
+                          ) : (
+                            <Refresh />
+                          )}
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Delete">
