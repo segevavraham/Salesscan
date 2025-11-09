@@ -1,0 +1,147 @@
+# Sales Coach AI Platform - Docker Compose
+version: '3.8'
+
+services:
+  # ============================================================================
+  # Backend API
+  # ============================================================================
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: salescoach-api
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 5000
+      HOST: 0.0.0.0
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/salescoach?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
+      JWT_EXPIRES_IN: 15m
+      REFRESH_TOKEN_EXPIRES_IN: 7d
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ASSEMBLYAI_API_KEY: ${ASSEMBLYAI_API_KEY}
+      CORS_ORIGIN: http://localhost:3000
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET: salescoach-recordings
+      S3_REGION: us-east-1
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend/logs:/app/logs
+      - ./backend/uploads:/app/uploads
+    networks:
+      - salescoach-network
+
+  # ============================================================================
+  # PostgreSQL Database
+  # ============================================================================
+  db:
+    image: postgres:15-alpine
+    container_name: salescoach-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: salescoach
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - salescoach-network
+
+  # ============================================================================
+  # Redis Cache
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: salescoach-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - salescoach-network
+
+  # ============================================================================
+  # MinIO (S3-compatible storage)
+  # ============================================================================
+  minio:
+    image: minio/minio:latest
+    container_name: salescoach-minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - salescoach-network
+
+  # ============================================================================
+  # Frontend (React) - Optional, can be run separately
+  # ============================================================================
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   container_name: salescoach-frontend
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     REACT_APP_API_URL: http://localhost:5000
+  #     REACT_APP_WS_URL: ws://localhost:5000
+  #   depends_on:
+  #     - api
+  #   networks:
+  #     - salescoach-network
+
+# ============================================================================
+# Volumes
+# ============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  salescoach-network:
+    driver: bridge
