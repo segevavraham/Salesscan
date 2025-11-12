@@ -9,9 +9,8 @@ const defaultSettings = {
   recordTranscripts: true,
   language: 'he-IL',
   multiLanguage: false,
-  aiProvider: 'openai',
-  apiKey: '',
-  customApiUrl: '',
+  elevenLabsKey: '',
+  openAIKey: '',
   model: 'gpt-4-turbo-preview',
   suggestionFrequency: 'medium',
   autoHideSuggestions: true,
@@ -42,19 +41,6 @@ function setupEventListeners() {
   // Clear data button
   document.getElementById('clearDataBtn').addEventListener('click', clearAllData);
 
-  // AI Provider change - show/hide custom URL
-  document.getElementById('aiProvider').addEventListener('change', (e) => {
-    const customUrlSection = document.getElementById('customUrlSection');
-    if (e.target.value === 'custom') {
-      customUrlSection.style.display = 'block';
-    } else {
-      customUrlSection.style.display = 'none';
-    }
-
-    // Update model options based on provider
-    updateModelOptions(e.target.value);
-  });
-
   // Links
   document.getElementById('privacyLink').addEventListener('click', (e) => {
     e.preventDefault();
@@ -84,19 +70,10 @@ async function loadSettings() {
     document.getElementById('language').value = settings.language;
     document.getElementById('multiLanguage').checked = settings.multiLanguage;
 
-    // AI Provider Settings
-    document.getElementById('aiProvider').value = settings.aiProvider;
-    document.getElementById('apiKey').value = settings.apiKey;
-    document.getElementById('customApiUrl').value = settings.customApiUrl || '';
+    // API Keys
+    document.getElementById('elevenLabsKey').value = settings.elevenLabsKey || '';
+    document.getElementById('openAIKey').value = settings.openAIKey || '';
     document.getElementById('model').value = settings.model;
-
-    // Show/hide custom URL section
-    if (settings.aiProvider === 'custom') {
-      document.getElementById('customUrlSection').style.display = 'block';
-    }
-
-    // Update model options
-    updateModelOptions(settings.aiProvider);
 
     // Suggestion Settings
     document.getElementById('suggestionFrequency').value = settings.suggestionFrequency;
@@ -125,6 +102,15 @@ async function loadSettings() {
  */
 async function saveSettings() {
   try {
+    const elevenLabsKey = document.getElementById('elevenLabsKey').value.trim();
+    const openAIKey = document.getElementById('openAIKey').value.trim();
+
+    // Validate API keys
+    if (!elevenLabsKey || !openAIKey) {
+      showStatus('Both API keys are required!', 'error');
+      return;
+    }
+
     const settings = {
       // General Settings
       autoStart: document.getElementById('autoStart').checked,
@@ -135,10 +121,9 @@ async function saveSettings() {
       language: document.getElementById('language').value,
       multiLanguage: document.getElementById('multiLanguage').checked,
 
-      // AI Provider Settings
-      aiProvider: document.getElementById('aiProvider').value,
-      apiKey: document.getElementById('apiKey').value,
-      customApiUrl: document.getElementById('customApiUrl').value,
+      // API Keys
+      elevenLabsKey: elevenLabsKey,
+      openAIKey: openAIKey,
       model: document.getElementById('model').value,
 
       // Suggestion Settings
@@ -158,13 +143,13 @@ async function saveSettings() {
 
     await chrome.storage.local.set({ settings });
 
-    showStatus('Settings saved successfully!', 'success');
+    showStatus('✅ Settings saved successfully!', 'success');
 
-    console.log('Settings saved:', settings);
+    console.log('Settings saved:', { ...settings, elevenLabsKey: '***', openAIKey: '***' });
 
   } catch (error) {
     console.error('Error saving settings:', error);
-    showStatus('Error saving settings', 'error');
+    showStatus('❌ Error saving settings', 'error');
   }
 }
 
@@ -205,46 +190,6 @@ async function clearAllData() {
   }
 }
 
-/**
- * Update model options based on provider
- */
-function updateModelOptions(provider) {
-  const modelSelect = document.getElementById('model');
-  modelSelect.innerHTML = '';
-
-  let options = [];
-
-  switch (provider) {
-    case 'openai':
-      options = [
-        { value: 'gpt-4-turbo-preview', label: 'GPT-4 Turbo' },
-        { value: 'gpt-4', label: 'GPT-4' },
-        { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' }
-      ];
-      break;
-
-    case 'anthropic':
-      options = [
-        { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus' },
-        { value: 'claude-3-sonnet-20240229', label: 'Claude 3 Sonnet' },
-        { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku' }
-      ];
-      break;
-
-    case 'custom':
-      options = [
-        { value: 'default', label: 'Default Model' }
-      ];
-      break;
-  }
-
-  options.forEach(opt => {
-    const option = document.createElement('option');
-    option.value = opt.value;
-    option.textContent = opt.label;
-    modelSelect.appendChild(option);
-  });
-}
 
 /**
  * Show status message

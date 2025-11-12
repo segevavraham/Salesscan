@@ -17,7 +17,7 @@ export class AnalyticsDashboard {
    * Initialize dashboard
    */
   initialize() {
-    this.inject Styles();
+    this.injectStyles();
     this.createContainer();
     this.setupSubscriptions();
   }

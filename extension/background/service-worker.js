@@ -1,218 +1,171 @@
 /**
- * Sales Coach AI - Background Service Worker
- * Manages recording, speech recognition, and AI analysis
+ * Premium Sales Coach AI - Background Service Worker v3.0
+ * Manages audio streaming, state, and communication
  */
 
-let recordingState = {
-  isRecording: false,
+let coachState = {
+  isActive: false,
   currentTabId: null,
-  mediaRecorder: null,
-  audioChunks: [],
-  transcriptionBuffer: []
+  streamId: null,
+  sessionStartTime: null,
+  stats: {
+    sessionCount: 0,
+    totalDuration: 0
+  }
 };
+
+/**
+ * Inject content script programmatically
+ */
+async function injectContentScript(tabId) {
+  try {
+    // Inject the content script
+    await chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      files: ['content/ultimate-content-script.js']
+    });
+
+    // Inject the CSS
+    await chrome.scripting.insertCSS({
+      target: { tabId: tabId },
+      files: ['styles/overlay.css']
+    });
+
+    console.log('Content script injected successfully');
+
+    // Wait a bit for the script to initialize
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Try sending the message again
+    chrome.tabs.sendMessage(tabId, {
+      type: 'RECORDING_STARTED',
+      streamId: recordingState.streamId
+    }).catch(err => {
+      console.error('Still cannot reach content script after injection:', err);
+    });
+
+  } catch (error) {
+    console.error('Error injecting content script:', error);
+    throw error;
+  }
+}
 
 // Listen for extension installation
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('Sales Coach AI installed');
+  console.log('✅ Premium Sales Coach AI v3.0 installed');
 
   // Initialize default settings
   chrome.storage.local.set({
     settings: {
-      autoStartRecording: false,
       language: 'he-IL', // Hebrew by default
-      aiProvider: 'openai',
-      showRealTimeSuggestions: true
+      model: 'gpt-4-turbo-preview',
+      enableProactiveCoaching: true,
+      enableSpeakerDiarization: true,
+      usePremiumTranscription: false, // AssemblyAI (paid)
+      openAIKey: null,
+      assemblyAIKey: null
     }
   });
+
+  console.log('📋 Default settings initialized');
 });
 
 // Listen for messages from content scripts and popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('Message received:', message);
+  console.log('📨 Message received:', message.type);
 
   switch (message.type) {
-    case 'START_RECORDING':
-      handleStartRecording(sender.tab.id, sendResponse);
-      return true; // Keep channel open for async response
-
-    case 'STOP_RECORDING':
-      handleStopRecording(sendResponse);
+    case 'GET_TAB_AUDIO_STREAM':
+      handleGetTabAudioStream(message.tabId || sender.tab.id, sendResponse);
       return true;
 
-    case 'GET_RECORDING_STATUS':
-      sendResponse({ isRecording: recordingState.isRecording });
+    case 'COACH_STARTED':
+      coachState.isActive = true;
+      coachState.currentTabId = sender.tab.id;
+      coachState.sessionStartTime = Date.now();
+      coachState.stats.sessionCount++;
+      console.log('✅ Coach session started');
+      sendResponse({ success: true });
       return true;
 
-    case 'TRANSCRIPTION_UPDATE':
-      handleTranscriptionUpdate(message.data, sender.tab.id);
+    case 'COACH_STOPPED':
+      if (coachState.sessionStartTime) {
+        const duration = Date.now() - coachState.sessionStartTime;
+        coachState.stats.totalDuration += duration;
+        console.log('⏹️ Coach session stopped. Duration:', Math.round(duration / 1000) + 's');
+      }
+      coachState.isActive = false;
+      coachState.currentTabId = null;
+      coachState.sessionStartTime = null;
+      sendResponse({ success: true });
+      return true;
+
+    case 'GET_COACH_STATUS':
+      sendResponse({
+        isActive: coachState.isActive,
+        sessionStartTime: coachState.sessionStartTime,
+        stats: coachState.stats
+      });
+      return true;
+
+    case 'OPEN_SETTINGS':
+      chrome.runtime.openOptionsPage();
+      sendResponse({ success: true });
       return false;
 
-    case 'REQUEST_SUGGESTION':
-      handleSuggestionRequest(message.data, sendResponse);
-      return true;
-
     default:
-      console.warn('Unknown message type:', message.type);
+      console.warn('⚠️ Unknown message type:', message.type);
+      sendResponse({ success: false, error: 'Unknown message type' });
   }
+
+  return true;
 });
 
 /**
- * Start recording audio from the current tab
+ * Get tab audio stream for capturing meeting audio
  */
-async function handleStartRecording(tabId, sendResponse) {
+async function handleGetTabAudioStream(tabId, sendResponse) {
   try {
-    if (recordingState.isRecording) {
-      sendResponse({ success: false, error: 'Already recording' });
-      return;
-    }
+    console.log('🎤 Requesting tab audio stream for tab:', tabId);
 
-    // Get the current tab's audio stream
+    // Get the media stream ID for tab audio
     const streamId = await chrome.tabCapture.getMediaStreamId({
       targetTabId: tabId
     });
 
-    recordingState.isRecording = true;
-    recordingState.currentTabId = tabId;
+    console.log('✅ Tab audio stream ID acquired:', streamId);
 
-    // Send message to content script to start UI
-    chrome.tabs.sendMessage(tabId, {
-      type: 'RECORDING_STARTED',
+    sendResponse({
+      success: true,
       streamId: streamId
     });
 
-    sendResponse({ success: true, streamId: streamId });
-
   } catch (error) {
-    console.error('Error starting recording:', error);
-    sendResponse({ success: false, error: error.message });
-  }
-}
-
-/**
- * Stop recording and process the audio
- */
-async function handleStopRecording(sendResponse) {
-  try {
-    if (!recordingState.isRecording) {
-      sendResponse({ success: false, error: 'Not recording' });
-      return;
-    }
-
-    const tabId = recordingState.currentTabId;
-
-    // Send message to content script to stop
-    if (tabId) {
-      chrome.tabs.sendMessage(tabId, {
-        type: 'RECORDING_STOPPED'
-      });
-    }
-
-    // Reset state
-    recordingState.isRecording = false;
-    recordingState.currentTabId = null;
-    recordingState.audioChunks = [];
-    recordingState.transcriptionBuffer = [];
-
-    sendResponse({ success: true });
-
-  } catch (error) {
-    console.error('Error stopping recording:', error);
-    sendResponse({ success: false, error: error.message });
-  }
-}
-
-/**
- * Handle transcription updates from speech recognition
- */
-async function handleTranscriptionUpdate(data, tabId) {
-  const { text, isFinal, speaker } = data;
-
-  console.log('Transcription update:', { text, isFinal, speaker });
-
-  // Add to buffer
-  recordingState.transcriptionBuffer.push({
-    text,
-    speaker,
-    timestamp: Date.now(),
-    isFinal
-  });
-
-  // If we have enough context (last 3-4 sentences), request AI suggestion
-  if (isFinal && speaker === 'client') {
-    const recentTranscripts = recordingState.transcriptionBuffer
-      .slice(-5)
-      .filter(t => t.isFinal)
-      .map(t => `${t.speaker}: ${t.text}`)
-      .join('\n');
-
-    // Request AI suggestion
-    requestAISuggestion(recentTranscripts, tabId);
-  }
-}
-
-/**
- * Request AI suggestion based on conversation context
- */
-async function requestAISuggestion(context, tabId) {
-  try {
-    // Get settings
-    const { settings } = await chrome.storage.local.get('settings');
-
-    // TODO: Replace with actual API call to your backend
-    // For now, we'll simulate with a simple analysis
-    const suggestion = await analyzeConversation(context, settings);
-
-    // Send suggestion to content script
-    chrome.tabs.sendMessage(tabId, {
-      type: 'SHOW_SUGGESTION',
-      suggestion: suggestion
+    console.error('❌ Error getting tab audio stream:', error);
+    sendResponse({
+      success: false,
+      error: error.message
     });
-
-  } catch (error) {
-    console.error('Error requesting AI suggestion:', error);
   }
 }
 
-/**
- * Analyze conversation and generate suggestions
- * TODO: Replace with actual AI API call
- */
-async function analyzeConversation(context, settings) {
-  // This is a placeholder - replace with actual API call to OpenAI/Claude/etc.
-  console.log('Analyzing context:', context);
-
-  return {
-    type: 'suggestion',
-    message: 'Try asking about their budget and timeline',
-    quickReplies: [
-      'What\'s your budget for this project?',
-      'When are you looking to get started?',
-      'What are your main goals?'
-    ],
-    confidence: 0.85,
-    reasoning: 'Client expressed interest but hasn\'t discussed specifics'
-  };
-}
-
-/**
- * Handle direct suggestion requests
- */
-async function handleSuggestionRequest(data, sendResponse) {
-  try {
-    const { settings } = await chrome.storage.local.get('settings');
-    const suggestion = await analyzeConversation(data.context, settings);
-    sendResponse({ success: true, suggestion });
-  } catch (error) {
-    console.error('Error handling suggestion request:', error);
-    sendResponse({ success: false, error: error.message });
-  }
-}
-
-// Tab management - stop recording if tab is closed
+// Tab management - cleanup if tab is closed
 chrome.tabs.onRemoved.addListener((tabId) => {
-  if (tabId === recordingState.currentTabId) {
-    handleStopRecording(() => {});
+  if (tabId === coachState.currentTabId) {
+    console.log('📌 Tab closed, cleaning up coach state');
+    if (coachState.sessionStartTime) {
+      const duration = Date.now() - coachState.sessionStartTime;
+      coachState.stats.totalDuration += duration;
+    }
+    coachState.isActive = false;
+    coachState.currentTabId = null;
+    coachState.sessionStartTime = null;
   }
 });
 
-console.log('Sales Coach AI Service Worker loaded');
+console.log('');
+console.log('╔═══════════════════════════════════════════════╗');
+console.log('║  Premium Sales Coach AI v3.0 Service Worker  ║');
+console.log('║  Status: Ready                                ║');
+console.log('╚═══════════════════════════════════════════════╝');
+console.log('');

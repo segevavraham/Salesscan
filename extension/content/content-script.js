@@ -114,9 +114,38 @@ class SalesCoachUI {
     };
     toggleButton.onclick = () => this.toggleRecording();
 
+    // Add settings button
+    const settingsButton = document.createElement('button');
+    settingsButton.id = 'sales-coach-settings-btn';
+    settingsButton.innerHTML = '⚙️';
+    settingsButton.title = 'Settings';
+    settingsButton.style.cssText = `
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 16px;
+    `;
+    settingsButton.onmouseover = () => {
+      settingsButton.style.background = 'rgba(255, 255, 255, 0.3)';
+      settingsButton.style.transform = 'scale(1.1)';
+    };
+    settingsButton.onmouseout = () => {
+      settingsButton.style.background = 'rgba(255, 255, 255, 0.2)';
+      settingsButton.style.transform = 'scale(1)';
+    };
+    settingsButton.onclick = () => {
+      chrome.runtime.sendMessage({ type: 'OPEN_SETTINGS' });
+    };
+
     panel.appendChild(statusDot);
     panel.appendChild(statusText);
     panel.appendChild(toggleButton);
+    panel.appendChild(settingsButton);
     this.overlayContainer.appendChild(panel);
 
     // Add pulse animation
@@ -240,16 +269,24 @@ class SalesCoachUI {
 
         console.log('Transcript:', transcript, 'Final:', isFinal);
 
+        // Detect speaker - improved logic
+        const speaker = this.detectSpeaker(transcript, isFinal);
+        
         // Send to background for processing
         chrome.runtime.sendMessage({
           type: 'TRANSCRIPTION_UPDATE',
           data: {
             text: transcript,
             isFinal: isFinal,
-            speaker: 'client', // TODO: Detect speaker
+            speaker: speaker,
             timestamp: Date.now()
           }
         });
+        
+        // If client spoke, trigger improvement suggestion
+        if (isFinal && speaker === 'client') {
+          this.triggerImprovementSuggestion(transcript);
+        }
       }
     };
 
@@ -265,6 +302,98 @@ class SalesCoachUI {
     };
 
     this.recognition.start();
+  }
+
+  /**
+   * Detect speaker based on text patterns and context
+   */
+  detectSpeaker(text, isFinal) {
+    if (!isFinal) return 'unknown';
+    
+    // Track conversation history
+    if (!this.conversationHistory) {
+      this.conversationHistory = [];
+    }
+    
+    // Patterns that indicate salesperson
+    const salespersonPatterns = [
+      /^(שלום|היי|בוקר טוב|ערב טוב|תודה|תודה רבה)/i,
+      /^(אני|אנחנו|המוצר שלנו|השירות שלנו)/i,
+      /^(בואו|בואי|אפשר|נוכל|אני יכול|אני יכול להציע)/i,
+      /\?$/  // Questions usually from salesperson
+    ];
+    
+    // Patterns that indicate client
+    const clientPatterns = [
+      /^(אני|אנחנו|אצלנו|בחברה שלנו|אצלי)/i,
+      /^(אבל|אלא|רק|לא|כן|נראה)/i,
+      /^(מה|איך|מתי|איפה|למה|מי)/i,
+      /(מתעניין|רוצה|צריך|מחפש|בודק|שוקל)/i
+    ];
+    
+    // Check patterns
+    const isSalesperson = salespersonPatterns.some(pattern => pattern.test(text));
+    const isClient = clientPatterns.some(pattern => pattern.test(text));
+    
+    // Use last speaker as context
+    const lastSpeaker = this.conversationHistory[this.conversationHistory.length - 1]?.speaker;
+    
+    // Determine speaker
+    let speaker = 'unknown';
+    if (isSalesperson && !isClient) {
+      speaker = 'salesperson';
+    } else if (isClient && !isSalesperson) {
+      speaker = 'client';
+    } else if (lastSpeaker) {
+      // Alternate if both patterns match
+      speaker = lastSpeaker === 'client' ? 'salesperson' : 'client';
+    } else {
+      // Default: first message is usually salesperson
+      speaker = this.conversationHistory.length === 0 ? 'salesperson' : 'client';
+    }
+    
+    // Store in history
+    this.conversationHistory.push({
+      speaker,
+      text,
+      timestamp: Date.now()
+    });
+    
+    // Keep only last 20 messages
+    if (this.conversationHistory.length > 20) {
+      this.conversationHistory = this.conversationHistory.slice(-20);
+    }
+    
+    return speaker;
+  }
+
+  /**
+   * Trigger improvement suggestion when client speaks
+   */
+  async triggerImprovementSuggestion(clientText) {
+    console.log('🎯 Client spoke, triggering improvement suggestion:', clientText);
+    
+    try {
+      // Request AI suggestion from background
+      const response = await chrome.runtime.sendMessage({
+        type: 'GET_IMPROVEMENT_SUGGESTION',
+        data: {
+          clientText: clientText,
+          conversationHistory: this.conversationHistory || []
+        }
+      });
+      
+      if (response && response.suggestion) {
+        this.showSuggestion({
+          improvement: response.suggestion.improvement || response.suggestion.message,
+          clientSignal: clientText,
+          quickReplies: response.suggestion.quickReplies || [],
+          reasoning: response.suggestion.reasoning || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error getting improvement suggestion:', error);
+    }
   }
 
   /**
@@ -354,28 +483,68 @@ class SalesCoachUI {
     `;
 
     const icon = document.createElement('div');
-    icon.textContent = '💡';
+    icon.textContent = '⚡';
     icon.style.fontSize = '24px';
 
     const title = document.createElement('div');
-    title.textContent = 'AI Coach Suggestion';
+    title.textContent = 'נקודות לשיפור - בזמן אמת';
     title.style.cssText = `
-      font-weight: 600;
-      color: #667eea;
+      font-weight: 700;
+      color: #f59e0b;
       font-size: 16px;
     `;
 
     header.appendChild(icon);
     header.appendChild(title);
 
-    // Suggestion message
-    const message = document.createElement('div');
-    message.textContent = suggestion.message;
-    message.style.cssText = `
+    // Client signal (what the client said) - always show if available
+    if (suggestion.clientSignal || suggestion.improvement) {
+      const clientSignal = document.createElement('div');
+      clientSignal.className = 'client-signal';
+      clientSignal.innerHTML = `<strong>👤 הלקוח אמר:</strong> ${suggestion.clientSignal || 'הלקוח דיבר לאחרונה'}`;
+      clientSignal.style.cssText = `
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-left: 5px solid #f59e0b;
+        padding: 16px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+        font-size: 14px;
+        color: #92400e;
+        font-weight: 600;
+        line-height: 1.8;
+        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+      `;
+      this.suggestionWidget.appendChild(clientSignal);
+    }
+
+    // Improvement point - always show
+    const improvement = document.createElement('div');
+    improvement.className = 'improvement-point';
+    improvement.innerHTML = `<strong>💡 נקודה לשיפור:</strong> ${suggestion.improvement || suggestion.message || 'נקודת שיפור'}`;
+    improvement.style.cssText = `
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border-left: 5px solid #3b82f6;
+      padding: 16px;
+      border-radius: 12px;
       margin-bottom: 16px;
-      color: #333;
-      line-height: 1.5;
+      font-size: 15px;
+      color: #1e40af;
+      font-weight: 600;
+      line-height: 1.8;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
     `;
+
+    // Suggestion message (fallback)
+    const message = document.createElement('div');
+    if (!suggestion.improvement && suggestion.message) {
+      message.textContent = suggestion.message;
+      message.style.cssText = `
+        margin-bottom: 16px;
+        color: #333;
+        line-height: 1.5;
+        font-weight: 500;
+      `;
+    }
 
     // Quick replies
     const quickReplies = document.createElement('div');
@@ -440,23 +609,24 @@ class SalesCoachUI {
 
     this.suggestionWidget.appendChild(closeBtn);
     this.suggestionWidget.appendChild(header);
-    this.suggestionWidget.appendChild(message);
+    
+    // Add improvement point if exists
+    if (improvement) {
+      this.suggestionWidget.appendChild(improvement);
+    }
+    
+    // Add message if exists
+    if (message && message.textContent) {
+      this.suggestionWidget.appendChild(message);
+    }
+    
     this.suggestionWidget.appendChild(quickReplies);
 
     this.overlayContainer.appendChild(this.suggestionWidget);
 
-    // Auto-hide after 30 seconds
-    setTimeout(() => {
-      if (this.suggestionWidget) {
-        this.suggestionWidget.style.opacity = '0';
-        setTimeout(() => {
-          if (this.suggestionWidget) {
-            this.suggestionWidget.remove();
-            this.suggestionWidget = null;
-          }
-        }, 300);
-      }
-    }, 30000);
+    // Keep widget visible - STICKY mode (no auto-hide)
+    // Widget stays visible until user closes it or new suggestion appears
+    // This ensures improvement points are always visible during the meeting
   }
 }
 

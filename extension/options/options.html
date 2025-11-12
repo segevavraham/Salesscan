@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sales Coach AI - Settings</title>
-  <link rel="stylesheet" href="options.css">
+  <link rel="stylesheet" href="./options.css">
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>🎯 Sales Coach AI Settings</h1>
+      <h1>🎯 Sales Coach AI Settingssss</h1>
       <p class="subtitle">Configure your AI sales coaching assistant</p>
     </header>
 
@@ -71,39 +71,43 @@
 
       <!-- AI Provider Settings -->
       <section class="settings-section">
-        <h2>AI Provider Configuration</h2>
+        <h2>API Keys Configuration</h2>
+        <p class="setting-description" style="margin-bottom: 20px; color: #94a3b8;">
+          Both API keys are required for full functionality. Keys are stored securely in your browser.
+        </p>
 
         <div class="setting-item">
-          <label for="aiProvider">AI Provider</label>
-          <select id="aiProvider" class="setting-select">
-            <option value="openai">OpenAI (GPT-4)</option>
-            <option value="anthropic">Anthropic (Claude)</option>
-            <option value="custom">Custom Backend</option>
-          </select>
-          <p class="setting-description">Choose your AI provider for generating suggestions</p>
+          <label for="elevenLabsKey">
+            ElevenLabs API Key
+            <span style="color: #ef4444; margin-left: 4px;">*</span>
+          </label>
+          <input type="password" id="elevenLabsKey" class="setting-input" placeholder="Enter your ElevenLabs API key" />
+          <p class="setting-description">
+            Required for real-time transcription with excellent Hebrew support.
+            <a href="https://elevenlabs.io/sign-up" target="_blank" style="color: #8b5cf6;">Get API key →</a>
+          </p>
         </div>
 
         <div class="setting-item">
-          <label for="apiKey">API Key</label>
-          <input type="password" id="apiKey" class="setting-input" placeholder="Enter your API key" />
-          <p class="setting-description">Your API key will be stored securely locally</p>
-        </div>
-
-        <div class="setting-item" id="customUrlSection" style="display: none;">
-          <label for="customApiUrl">Custom API URL</label>
-          <input type="text" id="customApiUrl" class="setting-input" placeholder="https://your-api.com/endpoint" />
-          <p class="setting-description">URL for your custom backend API</p>
+          <label for="openAIKey">
+            OpenAI API Key
+            <span style="color: #ef4444; margin-left: 4px;">*</span>
+          </label>
+          <input type="password" id="openAIKey" class="setting-input" placeholder="Enter your OpenAI API key" />
+          <p class="setting-description">
+            Required for AI coaching suggestions in Hebrew.
+            <a href="https://platform.openai.com/api-keys" target="_blank" style="color: #8b5cf6;">Get API key →</a>
+          </p>
         </div>
 
         <div class="setting-item">
           <label for="model">AI Model</label>
           <select id="model" class="setting-select">
-            <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
+            <option value="gpt-4-turbo-preview">GPT-4 Turbo (Recommended)</option>
             <option value="gpt-4">GPT-4</option>
-            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-            <option value="claude-3-opus-20240229">Claude 3 Opus</option>
-            <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
+            <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Faster, cheaper)</option>
           </select>
+          <p class="setting-description">Choose the OpenAI model for generating coaching suggestions</p>
         </div>
       </section>
 

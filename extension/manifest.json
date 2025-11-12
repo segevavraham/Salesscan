@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Sales Coach AI",
   "version": "2.1.0",
-  "description": "Enterprise-grade AI sales coach with real-time streaming transcription, live waveform visualization, proactive coaching, and intelligent meeting insights",
+  "description": "AI sales coach with real-time transcription, waveform visualization, proactive coaching, and meeting insights",
   "permissions": [
     "activeTab",
     "tabCapture",
@@ -24,13 +24,12 @@
         "https://meet.google.com/*",
         "https://*.zoom.us/*",
         "https://teams.microsoft.com/*",
-        "https://*.webex.com/*"
+        "https://*.webex.com/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*"
       ],
       "js": [
-        "content/ultimate-content-script.js"
-      ],
-      "css": [
-        "styles/overlay.css"
+        "content/premium-sales-coach.js"
       ],
       "run_at": "document_idle",
       "type": "module"

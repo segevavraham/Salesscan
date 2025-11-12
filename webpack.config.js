@@ -1,8 +1,12 @@
-const path = require('path');
-const CopyPlugin = require('copy-webpack-plugin');
-const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
+import path from 'path';
+import { fileURLToPath } from 'url';
+import CopyPlugin from 'copy-webpack-plugin';
+import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
 
-module.exports = (env, argv) => {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export default (env, argv) => {
   const isProduction = argv.mode === 'production';
   const shouldAnalyze = env && env.analyze;
 
@@ -75,6 +79,8 @@ module.exports = (env, argv) => {
           { from: 'extension/options/options.html', to: 'options/options.html' },
 
           // Copy CSS files
+          { from: 'extension/popup/popup.css', to: 'popup/popup.css' },
+          { from: 'extension/options/options.css', to: 'options/options.css' },
           { from: 'extension/styles', to: 'styles' },
 
           // Copy assets

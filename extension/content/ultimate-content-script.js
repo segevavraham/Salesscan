@@ -3,11 +3,12 @@
  * Integrates ALL advanced features for the best UX possible
  */
 
+import { LiveCoachWidget } from '../components/live-coach-widget.js';
 import { AdvancedSuggestionWidget } from '../components/advanced-suggestion-widget.js';
 import { LiveTranscriptionOverlay } from '../components/live-transcription-overlay.js';
 import { WaveformVisualizer } from '../components/waveform-visualizer.js';
 import { AnalyticsDashboard } from '../components/analytics-dashboard.js';
-import { AssemblyAIRealtimeService } from '../services/assemblyai-realtime.js';
+import { WebSpeechRecognitionService } from '../services/web-speech-recognition.js';
 import { OpenAIStreamingService } from '../services/openai-streaming.js';
 import { ProactiveCoachingEngine } from '../services/proactive-coaching-engine.js';
 import { MeetingStagesTracker, CompetitorIntelligence, PriceNegotiationAssistant } from '../services/meeting-intelligence-suite.js';
@@ -16,13 +17,14 @@ import { stateManager } from '../utils/state-manager.js';
 class UltimateSalesCoach {
   constructor() {
     // Core components
+    this.liveCoachWidget = null;
     this.suggestionWidget = null;
     this.transcriptionOverlay = null;
     this.waveformVisualizer = null;
     this.analyticsDashboard = null;
 
     // Services
-    this.assemblyAI = null;
+    this.speechRecognition = null;
     this.openAI = null;
     this.proactiveCoach = null;
     this.stagesTracker = null;
@@ -36,9 +38,10 @@ class UltimateSalesCoach {
 
     // Configuration
     this.config = {
-      assemblyAIKey: null,
+      elevenLabsKey: null,
       openAIKey: null,
       language: 'he',
+      model: 'gpt-4-turbo-preview',
       enableProactiveCoaching: true,
       enableStagesTracker: true,
       enableCompetitorIntel: true,
@@ -79,10 +82,17 @@ class UltimateSalesCoach {
       const result = await chrome.storage.local.get('settings');
       const settings = result.settings || {};
 
+      // Convert language code (he-IL -> he)
+      let languageCode = settings.language || 'he-IL';
+      if (languageCode.includes('-')) {
+        languageCode = languageCode.split('-')[0];
+      }
+
       this.config = {
-        assemblyAIKey: settings.assemblyAIKey || settings.apiKey,
-        openAIKey: settings.openAIKey || settings.apiKey,
-        language: settings.language || 'he',
+        elevenLabsKey: settings.elevenLabsKey || null, // SECURITY: Never store API keys in code
+        openAIKey: settings.openAIKey || null, // SECURITY: User must provide their own key
+        language: languageCode,
+        model: settings.model || 'gpt-4-turbo-preview',
         enableProactiveCoaching: settings.enableProactiveCoaching !== false,
         enableStagesTracker: settings.enableStagesTracker !== false,
         enableCompetitorIntel: settings.enableCompetitorIntel !== false,
@@ -90,6 +100,17 @@ class UltimateSalesCoach {
         enableWaveform: settings.enableWaveform !== false,
         enableLiveTranscription: settings.enableLiveTranscription !== false
       };
+
+      console.log('📋 Config loaded:', {
+        ...this.config,
+        elevenLabsKey: this.config.elevenLabsKey ? '✅ Set' : '❌ Missing',
+        openAIKey: this.config.openAIKey ? '✅ Set' : '❌ Missing'
+      });
+
+      // Validate API keys
+      if (!this.config.elevenLabsKey || !this.config.openAIKey) {
+        console.error('❌ API keys are missing! Please configure them in the extension settings.');
+      }
 
     } catch (error) {
       console.error('Error loading config:', error);
@@ -100,7 +121,11 @@ class UltimateSalesCoach {
    * Initialize all components
    */
   initializeComponents() {
-    // Suggestion Widget
+    // Live Coach Widget (NEW!)
+    this.liveCoachWidget = new LiveCoachWidget();
+    this.liveCoachWidget.initialize();
+
+    // Suggestion Widget (fallback)
     this.suggestionWidget = new AdvancedSuggestionWidget();
     this.suggestionWidget.initialize();
 
@@ -240,35 +265,34 @@ class UltimateSalesCoach {
     try {
       console.log('🎬 Starting Ultimate Sales Coach...');
 
-      // Request microphone
-      this.mediaStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 16000
-        }
-      });
+      // Validate API key (only OpenAI needed now!)
+      if (!this.config.openAIKey) {
+        alert('❌ OpenAI API key is missing!\n\nPlease configure your OpenAI API key in the extension settings before starting.');
+        chrome.runtime.openOptionsPage();
+        return;
+      }
 
-      // Initialize AssemblyAI
-      this.assemblyAI = new AssemblyAIRealtimeService({
-        apiKey: this.config.assemblyAIKey,
-        language: this.config.language,
-        enableSentimentAnalysis: true,
-        enableEntityDetection: true,
+      // Initialize Web Speech Recognition (FREE! Built into Chrome!)
+      console.log('🎤 Starting speech recognition...');
+      this.speechRecognition = new WebSpeechRecognitionService({
+        language: this.config.language === 'he' ? 'he-IL' : 'en-US',
+        continuous: true,
+        interimResults: true,
         onTranscript: (transcript) => this.handleFinalTranscript(transcript),
         onPartialTranscript: (transcript) => this.handlePartialTranscript(transcript),
         onError: (error) => this.handleError(error)
       });
 
-      await this.assemblyAI.connect();
-      await this.assemblyAI.startStreaming(this.mediaStream);
+      this.speechRecognition.start();
+      console.log('✅ Speech recognition started - listening to conversation!');
 
       // Initialize OpenAI
+      console.log('🤖 Initializing OpenAI...');
       this.openAI = new OpenAIStreamingService({
         apiKey: this.config.openAIKey,
-        model: 'gpt-4-turbo-preview'
+        model: this.config.model
       });
+      console.log('✅ OpenAI initialized');
 
       // Initialize Waveform
       if (this.config.enableWaveform) {
@@ -298,7 +322,20 @@ class UltimateSalesCoach {
 
     } catch (error) {
       console.error('❌ Error starting coach:', error);
-      alert('Failed to start coaching: ' + error.message);
+
+      let errorMessage = 'Failed to start coaching:\n\n';
+
+      if (error.name === 'NotAllowedError') {
+        errorMessage += '🎤 Microphone access denied. Please allow microphone access and try again.';
+      } else if (error.message.includes('401') || error.message.includes('403')) {
+        errorMessage += '🔑 Invalid API key. Please check your API keys in settings.';
+      } else if (error.message.includes('token')) {
+        errorMessage += '🔑 Authentication failed. Please verify your ElevenLabs API key.';
+      } else {
+        errorMessage += error.message;
+      }
+
+      alert(errorMessage);
     }
   }
 
@@ -308,22 +345,16 @@ class UltimateSalesCoach {
   async stop() {
     console.log('⏹️ Stopping Ultimate Sales Coach...');
 
-    // Stop AssemblyAI
-    if (this.assemblyAI) {
-      await this.assemblyAI.stop();
-      this.assemblyAI = null;
+    // Stop Speech Recognition
+    if (this.speechRecognition) {
+      this.speechRecognition.stop();
+      this.speechRecognition = null;
     }
 
     // Stop Waveform
     if (this.waveformVisualizer) {
       this.waveformVisualizer.stop();
       this.waveformVisualizer = null;
-    }
-
-    // Stop media stream
-    if (this.mediaStream) {
-      this.mediaStream.getTracks().forEach(track => track.stop());
-      this.mediaStream = null;
     }
 
     // Cancel ongoing AI requests
@@ -347,18 +378,26 @@ class UltimateSalesCoach {
       this.suggestionWidget.hideSuggestion();
     }
 
+    if (this.liveCoachWidget) {
+      this.liveCoachWidget.hide();
+    }
+
     console.log('✅ Ultimate Sales Coach stopped');
   }
 
   /**
-   * Handle final transcript from AssemblyAI
+   * Handle final transcript from ElevenLabs
    */
   async handleFinalTranscript(transcript) {
-    console.log('📝 Final transcript:', transcript);
+    console.log('🎙️ ===== NEW TRANSCRIPT RECEIVED =====');
+    console.log('📝 Text:', transcript.text);
+    console.log('📊 Confidence:', transcript.confidence);
 
-    // Detect speaker (simplified)
+    // Detect speaker
     const speaker = this.detectSpeaker(transcript.text);
     transcript.speaker = speaker;
+
+    console.log('👤 Speaker detected as:', speaker.toUpperCase());
 
     // Add to state
     stateManager.addMessage({
@@ -369,6 +408,8 @@ class UltimateSalesCoach {
       timestamp: Date.now()
     });
 
+    console.log('✅ Message added to conversation state');
+
     // Update transcription overlay
     if (this.transcriptionOverlay) {
       this.transcriptionOverlay.addTranscript({
@@ -376,6 +417,7 @@ class UltimateSalesCoach {
         speaker,
         isFinal: true
       });
+      console.log('✅ Transcript displayed on screen');
     }
 
     // Update waveform speaker
@@ -403,13 +445,19 @@ class UltimateSalesCoach {
 
     // Proactive coaching
     if (this.proactiveCoach && speaker === 'client') {
+      console.log('🔄 Running proactive coaching checks...');
       await this.runProactiveCoaching();
     }
 
     // Generate AI suggestion (if client spoke)
     if (speaker === 'client') {
+      console.log('🤖 CLIENT SPOKE! Generating AI coaching suggestion...');
       await this.generateStreamingSuggestion();
+    } else {
+      console.log('🎤 You spoke - waiting for client response before coaching');
     }
+
+    console.log('🎙️ ===== TRANSCRIPT PROCESSING COMPLETE =====\n');
   }
 
   /**
@@ -482,56 +530,96 @@ class UltimateSalesCoach {
       // Get conversation context
       const context = stateManager.getConversationContext(10);
 
-      // Show empty widget with streaming
-      await this.suggestionWidget.showSuggestion({
-        suggestions: { main_advice: '' }
-      }, true);
+      // Show loading in new widget
+      this.liveCoachWidget.showLoading();
+
+      let fullResponse = '';
 
       // Stream from OpenAI
       await this.openAI.streamCompletion(
         context,
         // onChunk
         (chunk) => {
-          this.suggestionWidget.updateSuggestion(chunk.delta, chunk.fullContent);
+          fullResponse = chunk.fullContent;
+          this.liveCoachWidget.updateStreaming(fullResponse);
         },
         // onComplete
         (result) => {
-          this.suggestionWidget.completeSuggestion(result);
+          console.log('🤖 AI Coaching received:', result.suggestion);
 
-          // Record buying signals and objections
-          if (result.suggestion?.analysis) {
-            const analysis = result.suggestion.analysis;
+          // Show in new professional widget
+          if (result.suggestion) {
+            this.liveCoachWidget.showCoaching(result.suggestion);
 
-            if (analysis.buying_signals) {
-              analysis.buying_signals.forEach(signal => {
-                stateManager.recordBuyingSignal(signal);
-              });
+            // Record buying signals and objections
+            if (result.suggestion.analysis) {
+              const analysis = result.suggestion.analysis;
+
+              if (analysis.buying_signals) {
+                analysis.buying_signals.forEach(signal => {
+                  stateManager.recordBuyingSignal(signal);
+                });
+              }
+
+              if (analysis.objections_hidden) {
+                analysis.objections_hidden.forEach(objection => {
+                  stateManager.recordObjection(objection);
+                });
+              }
             }
-
-            if (analysis.objections) {
-              analysis.objections.forEach(objection => {
-                stateManager.recordObjection(objection);
-              });
-            }
+          } else {
+            // Fallback to old widget if parsing fails
+            this.suggestionWidget.showSuggestion({
+              suggestions: { main_advice: fullResponse }
+            });
           }
         },
         // onError
         (error) => {
           console.error('❌ AI streaming error:', error);
+          this.liveCoachWidget.hide();
         }
       );
 
     } catch (error) {
       console.error('Error generating suggestion:', error);
+      this.liveCoachWidget.hide();
     }
   }
 
   /**
-   * Detect speaker (simplified)
+   * Detect speaker (improved)
    */
   detectSpeaker(text) {
-    // Simple heuristic: questions usually from salesperson
+    const lowerText = text.toLowerCase();
+
+    // Keywords that indicate salesperson
+    const salespersonKeywords = [
+      'אני', 'נוכל', 'נציע', 'אנחנו', 'החברה שלנו', 'המוצר שלנו',
+      'הפתרון שלנו', 'אז ספר', 'בוא נדבר', 'מה אתה חושב'
+    ];
+
+    // Keywords that indicate client
+    const clientKeywords = [
+      'מעניין', 'רוצה לדעת', 'איך זה', 'כמה זה', 'מתי',
+      'אני צריך', 'אנחנו צריכים', 'הבעיה שלנו', 'החברה שלנו צריכה'
+    ];
+
+    // Check salesperson keywords
+    if (salespersonKeywords.some(keyword => lowerText.includes(keyword))) {
+      console.log('🎤 Detected: YOU (salesperson) -', text.substring(0, 50));
+      return 'salesperson';
+    }
+
+    // Check client keywords
+    if (clientKeywords.some(keyword => lowerText.includes(keyword))) {
+      console.log('👤 Detected: CLIENT -', text.substring(0, 50));
+      return 'client';
+    }
+
+    // Questions usually from salesperson
     if (text.trim().endsWith('?')) {
+      console.log('🎤 Detected: YOU (question) -', text.substring(0, 50));
       return 'salesperson';
     }
 
@@ -539,7 +627,10 @@ class UltimateSalesCoach {
     const buffer = stateManager.get('conversation.buffer');
     const lastSpeaker = buffer[buffer.length - 1]?.speaker;
 
-    return lastSpeaker === 'client' ? 'salesperson' : 'client';
+    const detected = lastSpeaker === 'client' ? 'salesperson' : 'client';
+    console.log(`🔄 Detected: ${detected.toUpperCase()} (alternating) -`, text.substring(0, 50));
+
+    return detected;
   }
 
   /**
