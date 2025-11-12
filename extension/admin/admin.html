@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Coach AI - Admin Dashboard</title>
+  <link rel="stylesheet" href="admin.css">
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="admin-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <span class="logo-icon">💜</span>
+          <span class="logo-text">Sales Coach AI</span>
+        </div>
+        <div class="logo-subtitle">ניהול מרכזי</div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#dashboard" class="nav-item active" data-section="dashboard">
+          <span class="nav-icon">📊</span>
+          <span class="nav-text">לוח בקרה</span>
+        </a>
+        <a href="#users" class="nav-item" data-section="users">
+          <span class="nav-icon">👥</span>
+          <span class="nav-text">משתמשים</span>
+        </a>
+        <a href="#api-keys" class="nav-item" data-section="api-keys">
+          <span class="nav-icon">🔑</span>
+          <span class="nav-text">API Keys</span>
+        </a>
+        <a href="#analytics" class="nav-item" data-section="analytics">
+          <span class="nav-icon">📈</span>
+          <span class="nav-text">אנליטיקס</span>
+        </a>
+        <a href="#meetings" class="nav-item" data-section="meetings">
+          <span class="nav-icon">📅</span>
+          <span class="nav-text">פגישות</span>
+        </a>
+        <a href="#settings" class="nav-item" data-section="settings">
+          <span class="nav-icon">⚙️</span>
+          <span class="nav-text">הגדרות</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">👤</div>
+          <div class="user-details">
+            <div class="user-name" id="admin-name">Admin</div>
+            <div class="user-email" id="admin-email">admin@example.com</div>
+          </div>
+        </div>
+        <button class="btn-logout" id="logout-btn">
+          <span>🚪</span>
+          <span>יציאה</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Dashboard Section -->
+      <section class="content-section active" id="dashboard-section">
+        <div class="section-header">
+          <h1>לוח בקרה</h1>
+          <div class="header-actions">
+            <button class="btn btn-primary" id="refresh-btn">
+              <span>🔄</span>
+              <span>רענן</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #8b5cf6, #6366f1);">👥</div>
+            <div class="stat-details">
+              <div class="stat-value" id="total-users">0</div>
+              <div class="stat-label">משתמשים פעילים</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #22c55e, #16a34a);">📅</div>
+            <div class="stat-details">
+              <div class="stat-value" id="total-meetings">0</div>
+              <div class="stat-label">פגישות היום</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">⏱️</div>
+            <div class="stat-details">
+              <div class="stat-value" id="total-minutes">0</div>
+              <div class="stat-label">דקות הקלטה</div>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">💡</div>
+            <div class="stat-details">
+              <div class="stat-value" id="total-tips">0</div>
+              <div class="stat-label">טיפים שניתנו</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card">
+          <div class="card-header">
+            <h2>פעילות אחרונה</h2>
+          </div>
+          <div class="card-body">
+            <div class="activity-list" id="activity-list">
+              <div class="empty-state">
+                <div class="empty-icon">📋</div>
+                <div class="empty-text">אין פעילות אחרונה</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Users Section -->
+      <section class="content-section" id="users-section">
+        <div class="section-header">
+          <h1>ניהול משתמשים</h1>
+          <div class="header-actions">
+            <button class="btn btn-primary" id="add-user-btn">
+              <span>➕</span>
+              <span>הוסף משתמש</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Search and Filters -->
+        <div class="filters-bar">
+          <input type="text" class="search-input" id="user-search" placeholder="🔍 חפש משתמש...">
+          <select class="filter-select" id="user-filter">
+            <option value="all">כל המשתמשים</option>
+            <option value="active">פעילים</option>
+            <option value="inactive">לא פעילים</option>
+          </select>
+        </div>
+
+        <!-- Users Table -->
+        <div class="card">
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>שם</th>
+                  <th>אימייל</th>
+                  <th>סטטוס</th>
+                  <th>פגישות</th>
+                  <th>תאריך הצטרפות</th>
+                  <th>פעולות</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body">
+                <tr>
+                  <td colspan="6" class="empty-cell">
+                    <div class="empty-state">
+                      <div class="empty-icon">👥</div>
+                      <div class="empty-text">אין משתמשים</div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- API Keys Section -->
+      <section class="content-section" id="api-keys-section">
+        <div class="section-header">
+          <h1>ניהול API Keys</h1>
+          <div class="header-actions">
+            <button class="btn btn-success" id="save-keys-btn">
+              <span>💾</span>
+              <span>שמור שינויים</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Master API Keys Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2>🔑 מפתחות API ראשיים</h2>
+            <p class="card-subtitle">מפתחות אלו ישמשו את כל המשתמשים אם לא הוגדר אחרת</p>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="master-openai-key">OpenAI API Key</label>
+              <div class="input-with-button">
+                <input type="password" id="master-openai-key" class="input" placeholder="sk-...">
+                <button class="btn-icon" onclick="togglePasswordVisibility('master-openai-key')">
+                  <span>👁️</span>
+                </button>
+              </div>
+              <small class="form-help">נדרש לייצור טיפי מכירה AI</small>
+            </div>
+
+            <div class="form-group">
+              <label for="master-assemblyai-key">AssemblyAI API Key (אופציונלי)</label>
+              <div class="input-with-button">
+                <input type="password" id="master-assemblyai-key" class="input" placeholder="...">
+                <button class="btn-icon" onclick="togglePasswordVisibility('master-assemblyai-key')">
+                  <span>👁️</span>
+                </button>
+              </div>
+              <small class="form-help">לתמלול מתקדם (במקום Web Speech חינמי)</small>
+            </div>
+
+            <div class="alert alert-info">
+              <span class="alert-icon">ℹ️</span>
+              <div class="alert-content">
+                <strong>טיפ:</strong> השתמש במפתחות ארגוניים כדי לנהל עלויות בצורה מרכזית.
+                <br>עלות משוערת: $0.10-2.00 לשעת פגישה.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Usage Statistics -->
+        <div class="card">
+          <div class="card-header">
+            <h2>📊 סטטיסטיקות שימוש</h2>
+          </div>
+          <div class="card-body">
+            <div class="usage-grid">
+              <div class="usage-item">
+                <div class="usage-label">OpenAI Tokens (חודש זה)</div>
+                <div class="usage-value">0</div>
+                <div class="usage-cost">~ $0.00</div>
+              </div>
+              <div class="usage-item">
+                <div class="usage-label">AssemblyAI Minutes</div>
+                <div class="usage-value">0</div>
+                <div class="usage-cost">~ $0.00</div>
+              </div>
+              <div class="usage-item">
+                <div class="usage-label">סה"כ עלות</div>
+                <div class="usage-value">$0.00</div>
+                <div class="usage-cost">מתחילת החודש</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Analytics Section -->
+      <section class="content-section" id="analytics-section">
+        <div class="section-header">
+          <h1>אנליטיקס ודוחות</h1>
+          <div class="header-actions">
+            <button class="btn btn-secondary" id="export-btn">
+              <span>📥</span>
+              <span>ייצא דוח</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>📈 סטטיסטיקות כלליות</h2>
+          </div>
+          <div class="card-body">
+            <div class="chart-placeholder">
+              <div class="empty-icon">📊</div>
+              <div class="empty-text">גרפים יופיעו כאן בקרוב</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Meetings Section -->
+      <section class="content-section" id="meetings-section">
+        <div class="section-header">
+          <h1>ניהול פגישות</h1>
+          <div class="header-actions">
+            <button class="btn btn-primary" id="sync-calendar-btn">
+              <span>🔄</span>
+              <span>סנכרן יומן</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>📅 פגישות קרובות</h2>
+          </div>
+          <div class="card-body">
+            <div class="meetings-list" id="meetings-list">
+              <div class="empty-state">
+                <div class="empty-icon">📅</div>
+                <div class="empty-text">אין פגישות מתוכננות</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Settings Section -->
+      <section class="content-section" id="settings-section">
+        <div class="section-header">
+          <h1>הגדרות מערכת</h1>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>⚙️ הגדרות כלליות</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="allow-self-registration">
+                <span>אפשר רישום עצמי למשתמשים</span>
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="require-email-verification">
+                <span>דרוש אימות אימייל</span>
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="enable-usage-tracking">
+                <span>אפשר מעקב שימוש</span>
+              </label>
+            </div>
+
+            <button class="btn btn-primary" id="save-settings-btn">
+              <span>💾</span>
+              <span>שמור הגדרות</span>
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Add User Modal -->
+  <div class="modal" id="add-user-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>הוסף משתמש חדש</h3>
+        <button class="modal-close" onclick="closeModal('add-user-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="new-user-name">שם מלא</label>
+          <input type="text" id="new-user-name" class="input" placeholder="שם משתמש">
+        </div>
+
+        <div class="form-group">
+          <label for="new-user-email">אימייל</label>
+          <input type="email" id="new-user-email" class="input" placeholder="user@example.com">
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="send-welcome-email">
+            <span>שלח אימייל הזמנה</span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('add-user-modal')">ביטול</button>
+        <button class="btn btn-primary" id="confirm-add-user">הוסף</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../services/google-auth.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

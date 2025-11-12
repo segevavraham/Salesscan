@@ -13,6 +13,7 @@ const btnIcon = document.getElementById('btnIcon');
 const btnText = document.getElementById('btnText');
 const statusBadge = document.getElementById('statusBadge');
 const statusText = document.getElementById('statusText');
+const adminBtn = document.getElementById('adminBtn');
 const settingsBtn = document.getElementById('settingsBtn');
 const historyBtn = document.getElementById('historyBtn');
 const helpBtn = document.getElementById('helpBtn');
@@ -30,6 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
  */
 function setupEventListeners() {
   toggleBtn.addEventListener('click', handleToggleRecording);
+  adminBtn.addEventListener('click', openAdminDashboard);
   settingsBtn.addEventListener('click', () => {
     chrome.runtime.openOptionsPage();
   });
@@ -252,6 +254,14 @@ function isMeetingUrl(url) {
   ];
 
   return meetingDomains.some(domain => url.includes(domain));
+}
+
+/**
+ * Open admin dashboard
+ */
+function openAdminDashboard() {
+  const adminUrl = chrome.runtime.getURL('admin/admin.html');
+  chrome.tabs.create({ url: adminUrl });
 }
 
 /**

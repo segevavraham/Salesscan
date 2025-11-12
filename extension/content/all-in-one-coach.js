@@ -440,6 +440,37 @@ Keep it concise, value-focused, and action-oriented.`;
 })();
 
 // ============================================================================
+// Speaker Detection Service
+// ============================================================================
+(function() {
+  /**
+   * Detect speaker using AI and heuristics
+   */
+  async function detectSpeaker(text, conversationHistory) {
+    // Simple heuristics first (fast)
+    const salespersonKeywords = ['אני', 'אנחנו', 'החברה שלנו', 'המוצר שלנו', 'אציע', 'אמליץ', 'אוכל להציע', 'נוכל לעזור'];
+    const clientKeywords = ['אתם', 'אתה', 'אצלכם', 'המוצר שלכם', 'כמה זה עולה', 'מעניין', 'אצלנו', 'נצטרך'];
+
+    const hasSalespersonKeywords = salespersonKeywords.some(kw => text.includes(kw));
+    const hasClientKeywords = clientKeywords.some(kw => text.includes(kw));
+
+    if (hasSalespersonKeywords && !hasClientKeywords) return 'salesperson';
+    if (hasClientKeywords && !hasSalespersonKeywords) return 'client';
+
+    // If unclear, use turn-taking logic
+    const lastSpeaker = conversationHistory.length > 0
+      ? conversationHistory[conversationHistory.length - 1].speaker
+      : 'salesperson';
+
+    // Alternate between speakers
+    return lastSpeaker === 'salesperson' ? 'client' : 'salesperson';
+  }
+
+  // Expose to window
+  window.detectSpeaker = detectSpeaker;
+})();
+
+// ============================================================================
 // Web Speech Recognition Service
 // ============================================================================
 (function() {
@@ -1040,41 +1071,66 @@ Keep it concise, value-focused, and action-oriented.`;
         box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
       }
 
-      /* Transcript Stream */
-      .fca-transcript-item {
-        background: rgba(255, 255, 255, 0.03);
-        border-radius: 12px;
-        padding: 12px 16px;
-        margin-bottom: 10px;
-        border-right: 3px solid #6366f1;
-        animation: fadeIn 0.3s ease;
+      /* Transcript Container */
+      .fca-transcripts {
+        max-height: 300px;
+        overflow-y: auto;
+        margin-bottom: 16px;
       }
 
-      @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
+      /* Transcript Stream */
+      .fca-transcript-item {
+        margin-bottom: 12px;
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border-left: 3px solid;
+        animation: slideInRight 0.3s ease-out;
+      }
+
+      .fca-transcript-item.salesperson {
+        border-left-color: #8b5cf6;
+        background: rgba(139, 92, 246, 0.1);
+      }
+
+      .fca-transcript-item.client {
+        border-left-color: #22c55e;
+        background: rgba(34, 197, 94, 0.1);
+      }
+
+      @keyframes slideInRight {
+        from {
+          transform: translateX(20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
       }
 
       .fca-transcript-speaker {
-        font-size: 11px;
-        color: #94a3b8;
-        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
         margin-bottom: 6px;
-        text-transform: uppercase;
+        font-size: 12px;
+        font-weight: 600;
+        opacity: 0.8;
       }
 
-      .fca-transcript-speaker.client {
-        color: #3b82f6;
+      .fca-speaker-icon {
+        font-size: 14px;
       }
 
-      .fca-transcript-speaker.salesperson {
-        color: #8b5cf6;
+      .fca-speaker-label {
+        color: #94a3b8;
       }
 
       .fca-transcript-text {
         font-size: 14px;
         color: #e2e8f0;
-        line-height: 1.6;
+        line-height: 1.5;
       }
 
       /* Empty State */
@@ -1465,42 +1521,45 @@ Keep it concise, value-focused, and action-oriented.`;
      * Show transcript
      */
     showTranscript(transcript) {
-      const contentArea = document.getElementById('fca-content-area');
-      if (!contentArea) return;
+      const content = this.container.querySelector('.fca-content') || document.getElementById('fca-content-area');
+      if (!content) return;
 
-      // Remove empty state if exists
-      const emptyState = contentArea.querySelector('.fca-empty-state');
-      if (emptyState) {
-        emptyState.remove();
+      // Remove empty state
+      const emptyState = content.querySelector('.fca-empty-state');
+      if (emptyState) emptyState.remove();
+
+      // Get or create transcript container
+      let transcriptContainer = content.querySelector('.fca-transcripts');
+      if (!transcriptContainer) {
+        transcriptContainer = document.createElement('div');
+        transcriptContainer.className = 'fca-transcripts';
+        content.insertBefore(transcriptContainer, content.querySelector('.fca-actions'));
       }
 
-      // Create transcript item
+      // Create transcript item with speaker icon
+      const speakerIcon = transcript.speaker === 'salesperson' ? '💼' : '👤';
+      const speakerLabel = transcript.speaker === 'salesperson' ? 'אתה' : 'לקוח';
+      const speakerClass = transcript.speaker === 'salesperson' ? 'salesperson' : 'client';
+
       const item = document.createElement('div');
-      item.className = 'fca-transcript-item';
+      item.className = `fca-transcript-item ${speakerClass}`;
       item.innerHTML = `
-      <div class="fca-transcript-speaker ${transcript.speaker}">${transcript.speaker === 'client' ? 'לקוח' : 'אתה'}</div>
-      <div class="fca-transcript-text">${transcript.text}</div>
-    `;
+        <div class="fca-transcript-speaker">
+          <span class="fca-speaker-icon">${speakerIcon}</span>
+          <span class="fca-speaker-label">${speakerLabel}</span>
+        </div>
+        <div class="fca-transcript-text">${transcript.text}</div>
+      `;
 
-      // Insert before actions section
-      const actionsSection = contentArea.querySelector('.fca-actions');
-      if (actionsSection) {
-        contentArea.insertBefore(item, actionsSection);
-      } else {
-        contentArea.insertBefore(item, contentArea.firstChild);
-      }
+      transcriptContainer.appendChild(item);
 
-      // Keep only last 10 transcripts
-      const items = contentArea.querySelectorAll('.fca-transcript-item');
-      if (items.length > 10) {
-        items[items.length - 1].remove();
-      }
+      // Scroll to bottom
+      content.scrollTop = content.scrollHeight;
 
       // Update message count
-      const messageCount = document.getElementById('fca-message-count');
-      if (messageCount) {
-        messageCount.textContent = items.length.toString();
-      }
+      const msgCount = transcriptContainer.querySelectorAll('.fca-transcript-item').length;
+      const msgCountEl = document.getElementById('fca-message-count');
+      if (msgCountEl) msgCountEl.textContent = msgCount;
     }
 
     /**
@@ -1804,29 +1863,39 @@ Keep it concise, value-focused, and action-oriented.`;
       console.log('✅ All-in-One Sales Coach ready!');
 
       // Handle transcript from speech recognition
-      function handleTranscript(transcript) {
+      async function handleTranscript(transcript) {
         console.log('📝 Final transcript:', transcript.text);
 
-        // Show in UI
+        // Detect speaker
+        const speaker = await window.detectSpeaker(transcript.text, window.salesCoach.conversationBuffer);
+
+        console.log(`🎤 Speaker detected: ${speaker === 'salesperson' ? 'איש מכירות' : 'לקוח'}`);
+
+        // Show in UI with correct speaker
         coach.showTranscript({
-          speaker: 'salesperson', // Default to salesperson, can be improved with AI detection
-          text: transcript.text
+          speaker: speaker,
+          text: transcript.text,
+          timestamp: Date.now()
         });
 
         // Add to conversation buffer
         window.salesCoach.conversationBuffer.push({
           timestamp: transcript.timestamp,
-          speaker: 'salesperson',
+          speaker: speaker,
           text: transcript.text
         });
 
-        // Keep last 10 messages
-        if (window.salesCoach.conversationBuffer.length > 10) {
+        // Keep last 15 messages
+        if (window.salesCoach.conversationBuffer.length > 15) {
           window.salesCoach.conversationBuffer.shift();
         }
 
-        // Get AI coaching (debounced)
-        debounceGetCoaching();
+        // Only generate coaching if CLIENT spoke
+        if (speaker === 'client') {
+          debounceGetCoaching();
+        } else {
+          console.log('⏭️ Skipping coaching - salesperson spoke');
+        }
       }
 
       // Handle partial transcript
@@ -1922,9 +1991,43 @@ Keep it concise, value-focused, and action-oriented.`;
   // Load configuration from Chrome storage
   async function loadConfig() {
     return new Promise((resolve) => {
-      chrome.storage.local.get(['openAIKey', 'model', 'language'], (result) => {
+      chrome.storage.local.get([
+        'openAIKey',
+        'assemblyAIKey',
+        'model',
+        'language',
+        'masterAPIKeys',
+        'currentUser',
+        'users'
+      ], (result) => {
+        let openAIKey = '';
+        let assemblyAIKey = '';
+
+        // Priority 1: Master API Keys (from admin dashboard)
+        if (result.masterAPIKeys && result.masterAPIKeys.openai) {
+          openAIKey = result.masterAPIKeys.openai;
+          assemblyAIKey = result.masterAPIKeys.assemblyai || '';
+          console.log('✅ Using Master API Keys from admin');
+        }
+        // Priority 2: User-specific API Keys (if admin assigned)
+        else if (result.currentUser && result.users) {
+          const userRecord = result.users.find(u => u.email === result.currentUser.email);
+          if (userRecord && userRecord.apiKeys) {
+            openAIKey = userRecord.apiKeys.openai || '';
+            assemblyAIKey = userRecord.apiKeys.assemblyai || '';
+            console.log('✅ Using user-specific API Keys');
+          }
+        }
+        // Priority 3: Keys from options page (backward compatibility)
+        if (!openAIKey) {
+          openAIKey = result.openAIKey || '';
+          assemblyAIKey = result.assemblyAIKey || '';
+          console.log('✅ Using keys from options page');
+        }
+
         resolve({
-          openAIKey: result.openAIKey || '',
+          openAIKey: openAIKey,
+          assemblyAIKey: assemblyAIKey,
           model: result.model || 'gpt-4-turbo-preview',
           language: result.language || 'he-IL'
         });
