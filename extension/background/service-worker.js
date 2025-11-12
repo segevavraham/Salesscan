@@ -1,5 +1,5 @@
 /**
- * Premium Sales Coach AI - Background Service Worker v3.0
+ * Sales Coach AI - Background Service Worker v2.2.1
  * Manages audio streaming, state, and communication
  */
 
@@ -19,10 +19,10 @@ let coachState = {
  */
 async function injectContentScript(tabId) {
   try {
-    // Inject the content script (v3.0 - premium-sales-coach)
+    // Inject the content script (v2.2.1 - all-in-one-coach)
     await chrome.scripting.executeScript({
       target: { tabId: tabId },
-      files: ['content/premium-sales-coach.js']
+      files: ['content/all-in-one-coach.js']
     });
 
     // Note: CSS is now built into FloatingCoachAssistant component
@@ -49,7 +49,7 @@ async function injectContentScript(tabId) {
 
 // Listen for extension installation
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('✅ Premium Sales Coach AI v3.0 installed');
+  console.log('✅ Sales Coach AI v2.2.1 installed');
 
   // Initialize default settings
   chrome.storage.local.set({
@@ -170,7 +170,7 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 
 console.log('');
 console.log('╔═══════════════════════════════════════════════╗');
-console.log('║  Premium Sales Coach AI v3.0 Service Worker  ║');
-console.log('║  Status: Ready                                ║');
+console.log('║    Sales Coach AI v2.2.1 Service Worker      ║');
+console.log('║             Status: Ready                     ║');
 console.log('╚═══════════════════════════════════════════════╝');
 console.log('');
