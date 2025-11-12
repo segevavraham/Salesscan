@@ -1,5 +1,5 @@
 /**
- * Sales Coach AI - Background Service Worker v2.2.1
+ * Sales Coach AI - Background Service Worker v2.2.2
  * Manages audio streaming, state, and communication
  */
 
@@ -49,7 +49,7 @@ async function injectContentScript(tabId) {
 
 // Listen for extension installation
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('✅ Sales Coach AI v2.2.1 installed');
+  console.log('✅ Sales Coach AI v2.2.2 installed');
 
   // Initialize default settings
   chrome.storage.local.set({
@@ -170,7 +170,7 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 
 console.log('');
 console.log('╔═══════════════════════════════════════════════╗');
-console.log('║    Sales Coach AI v2.2.1 Service Worker      ║');
+console.log('║    Sales Coach AI v2.2.2 Service Worker      ║');
 console.log('║             Status: Ready                     ║');
 console.log('╚═══════════════════════════════════════════════╝');
 console.log('');
