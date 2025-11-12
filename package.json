@@ -1,0 +1,52 @@
+{
+  "name": "sales-coach-chrome-extension",
+  "version": "2.0.0",
+  "description": "Enterprise-grade AI sales coach with real-time streaming transcription, sentiment analysis, and intelligent suggestions",
+  "type": "module",
+  "scripts": {
+    "build": "webpack --mode production",
+    "dev": "webpack --mode development --watch",
+    "test": "jest",
+    "lint": "eslint extension/**/*.js",
+    "format": "prettier --write extension/**/*.{js,css,html}",
+    "analyze": "webpack --mode production --analyze"
+  },
+  "keywords": [
+    "chrome-extension",
+    "sales",
+    "ai",
+    "coaching",
+    "meetings",
+    "speech-recognition",
+    "real-time",
+    "streaming",
+    "assemblyai",
+    "openai",
+    "sentiment-analysis",
+    "conversation-intelligence"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.23.0",
+    "@babel/preset-env": "^7.23.0",
+    "babel-loader": "^9.1.3",
+    "copy-webpack-plugin": "^11.0.0",
+    "css-loader": "^6.8.1",
+    "eslint": "^8.50.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.0.0",
+    "sharp": "^0.34.5",
+    "style-loader": "^3.3.3",
+    "webpack": "^5.89.0",
+    "webpack-bundle-analyzer": "^4.9.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "recordrtc": "^5.6.2"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
+}
