@@ -1512,7 +1512,11 @@ Keep it concise, value-focused, and action-oriented.`;
      * Open settings
      */
     openSettings() {
-      chrome.runtime.openOptionsPage();
+      if (chrome.runtime && chrome.runtime.openOptionsPage) {
+        chrome.runtime.openOptionsPage();
+      } else {
+        window.open(chrome.runtime.getURL('options/options.html'), '_blank');
+      }
     }
 
     /**
@@ -1601,7 +1605,13 @@ Keep it concise, value-focused, and action-oriented.`;
       } else {
         coach.showToast('⚠️ נדרש מפתח OpenAI בהגדרות', 'warning');
         setTimeout(() => {
-          chrome.runtime.openOptionsPage();
+          // Open options page safely
+          if (chrome.runtime && chrome.runtime.openOptionsPage) {
+            chrome.runtime.openOptionsPage();
+          } else {
+            // Fallback: open options page manually
+            window.open(chrome.runtime.getURL('options/options.html'), '_blank');
+          }
         }, 2000);
       }
 
