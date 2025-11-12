@@ -2,7 +2,10 @@
  * All-in-One Sales Coach Content Script
  * Combines FloatingCoachAssistant, WebSpeechRecognitionService, and OpenAIStreamingService
  * WITHOUT ES6 imports - fully self-contained
+ * Version: 2.2.0 - Updated 2025-01-12 21:30:00
  */
+
+console.log('🚀 Sales Coach AI v2.2.0 - Loaded at:', new Date().toISOString());
 
 // ============================================================================
 // OpenAI Streaming Service
