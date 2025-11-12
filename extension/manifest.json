@@ -29,10 +29,9 @@
         "http://127.0.0.1/*"
       ],
       "js": [
-        "content/premium-sales-coach.js"
+        "content/all-in-one-coach.js"
       ],
-      "run_at": "document_idle",
-      "type": "module"
+      "run_at": "document_end"
     }
   ],
   "action": {
