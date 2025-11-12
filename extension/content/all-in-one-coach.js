@@ -2,7 +2,10 @@
  * All-in-One Sales Coach Content Script
  * Combines FloatingCoachAssistant, WebSpeechRecognitionService, and OpenAIStreamingService
  * WITHOUT ES6 imports - fully self-contained
+ * Version: 2.2.0 - Updated 2025-01-12 21:30:00
  */
+
+console.log('🚀 Sales Coach AI v2.2.0 - Loaded at:', new Date().toISOString());
 
 // ============================================================================
 // OpenAI Streaming Service
@@ -437,6 +440,37 @@ Keep it concise, value-focused, and action-oriented.`;
 
   // Expose to window
   window.OpenAIStreamingService = OpenAIStreamingService;
+})();
+
+// ============================================================================
+// Speaker Detection Service
+// ============================================================================
+(function() {
+  /**
+   * Detect speaker using AI and heuristics
+   */
+  async function detectSpeaker(text, conversationHistory) {
+    // Simple heuristics first (fast)
+    const salespersonKeywords = ['אני', 'אנחנו', 'החברה שלנו', 'המוצר שלנו', 'אציע', 'אמליץ', 'אוכל להציע', 'נוכל לעזור'];
+    const clientKeywords = ['אתם', 'אתה', 'אצלכם', 'המוצר שלכם', 'כמה זה עולה', 'מעניין', 'אצלנו', 'נצטרך'];
+
+    const hasSalespersonKeywords = salespersonKeywords.some(kw => text.includes(kw));
+    const hasClientKeywords = clientKeywords.some(kw => text.includes(kw));
+
+    if (hasSalespersonKeywords && !hasClientKeywords) return 'salesperson';
+    if (hasClientKeywords && !hasSalespersonKeywords) return 'client';
+
+    // If unclear, use turn-taking logic
+    const lastSpeaker = conversationHistory.length > 0
+      ? conversationHistory[conversationHistory.length - 1].speaker
+      : 'salesperson';
+
+    // Alternate between speakers
+    return lastSpeaker === 'salesperson' ? 'client' : 'salesperson';
+  }
+
+  // Expose to window
+  window.detectSpeaker = detectSpeaker;
 })();
 
 // ============================================================================
@@ -1040,41 +1074,66 @@ Keep it concise, value-focused, and action-oriented.`;
         box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
       }
 
-      /* Transcript Stream */
-      .fca-transcript-item {
-        background: rgba(255, 255, 255, 0.03);
-        border-radius: 12px;
-        padding: 12px 16px;
-        margin-bottom: 10px;
-        border-right: 3px solid #6366f1;
-        animation: fadeIn 0.3s ease;
+      /* Transcript Container */
+      .fca-transcripts {
+        max-height: 300px;
+        overflow-y: auto;
+        margin-bottom: 16px;
       }
 
-      @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
+      /* Transcript Stream */
+      .fca-transcript-item {
+        margin-bottom: 12px;
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border-left: 3px solid;
+        animation: slideInRight 0.3s ease-out;
+      }
+
+      .fca-transcript-item.salesperson {
+        border-left-color: #8b5cf6;
+        background: rgba(139, 92, 246, 0.1);
+      }
+
+      .fca-transcript-item.client {
+        border-left-color: #22c55e;
+        background: rgba(34, 197, 94, 0.1);
+      }
+
+      @keyframes slideInRight {
+        from {
+          transform: translateX(20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
       }
 
       .fca-transcript-speaker {
-        font-size: 11px;
-        color: #94a3b8;
-        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
         margin-bottom: 6px;
-        text-transform: uppercase;
+        font-size: 12px;
+        font-weight: 600;
+        opacity: 0.8;
       }
 
-      .fca-transcript-speaker.client {
-        color: #3b82f6;
+      .fca-speaker-icon {
+        font-size: 14px;
       }
 
-      .fca-transcript-speaker.salesperson {
-        color: #8b5cf6;
+      .fca-speaker-label {
+        color: #94a3b8;
       }
 
       .fca-transcript-text {
         font-size: 14px;
         color: #e2e8f0;
-        line-height: 1.6;
+        line-height: 1.5;
       }
 
       /* Empty State */
@@ -1099,6 +1158,49 @@ Keep it concise, value-focused, and action-oriented.`;
       .fca-empty-subtext {
         font-size: 13px;
         opacity: 0.7;
+      }
+
+      /* Start/Stop Button */
+      .fca-actions {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .fca-start-btn {
+        width: 100%;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 14px 20px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+      }
+
+      .fca-start-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(34, 197, 94, 0.4);
+      }
+
+      .fca-start-btn.recording {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        animation: pulse-red 1.5s ease-in-out infinite;
+      }
+
+      @keyframes pulse-red {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+        50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+      }
+
+      .fca-start-icon {
+        font-size: 20px;
       }
 
       /* Notification Toast */
@@ -1224,18 +1326,24 @@ Keep it concise, value-focused, and action-oriented.`;
         </div>
         <div class="fca-status-bar">
           <div class="fca-status-item">
-            <div class="fca-status-dot active"></div>
-            <span>מקשיב</span>
+            <div class="fca-status-dot" id="fca-status-dot"></div>
+            <span id="fca-status-text">מוכן להקלטה</span>
           </div>
           <div class="fca-status-item">
-            <span>🎤 דקות: <strong>0:00</strong></span>
+            <span>🎤 זמן: <strong id="fca-timer">0:00</strong></span>
           </div>
         </div>
         <div class="fca-content">
           <div class="fca-empty-state">
-            <div class="fca-empty-icon">👂</div>
-            <div class="fca-empty-text">מקשיב לשיחה...</div>
-            <div class="fca-empty-subtext">העצות יופיעו כאן ברגע שהלקוח ידבר</div>
+            <div class="fca-empty-icon">🎙️</div>
+            <div class="fca-empty-text">מוכן להתחיל</div>
+            <div class="fca-empty-subtext">לחץ על כפתור ההקלטה למטה כדי להתחיל</div>
+          </div>
+          <div class="fca-actions">
+            <button class="fca-start-btn" id="fca-start-btn">
+              <span class="fca-start-icon">🎙️</span>
+              <span class="fca-start-text">התחל הקלטה</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1244,6 +1352,34 @@ Keep it concise, value-focused, and action-oriented.`;
       // Setup controls
       document.getElementById('fca-expand-btn').onclick = () => this.renderFullMode();
       document.getElementById('fca-minimize-btn').onclick = () => this.renderCompactMode();
+
+      // Setup start/stop button
+      const startBtn = document.getElementById('fca-start-btn');
+      if (startBtn) {
+        startBtn.onclick = async () => {
+          if (window.salesCoach && window.salesCoach.isListening) {
+            // Stop
+            window.salesCoach.stopListening();
+            startBtn.innerHTML = `
+              <span class="fca-start-icon">🎙️</span>
+              <span class="fca-start-text">התחל הקלטה</span>
+            `;
+            startBtn.classList.remove('recording');
+            this.updateStatus('idle');
+          } else {
+            // Start
+            const started = await window.salesCoach.startListening();
+            if (started) {
+              startBtn.innerHTML = `
+                <span class="fca-start-icon">⏹️</span>
+                <span class="fca-start-text">עצור הקלטה</span>
+              `;
+              startBtn.classList.add('recording');
+              this.updateStatus('listening');
+            }
+          }
+        };
+      }
     }
 
     /**
@@ -1269,21 +1405,27 @@ Keep it concise, value-focused, and action-oriented.`;
         </div>
         <div class="fca-status-bar">
           <div class="fca-status-item">
-            <div class="fca-status-dot active"></div>
-            <span>פעיל ומאזין</span>
+            <div class="fca-status-dot" id="fca-status-dot"></div>
+            <span id="fca-status-text">מוכן להקלטה</span>
           </div>
           <div class="fca-status-item">
-            <span>⏱️ <strong>0:00</strong></span>
+            <span>⏱️ <strong id="fca-timer">0:00</strong></span>
           </div>
           <div class="fca-status-item">
-            <span>💬 <strong>0</strong> הודעות</span>
+            <span>💬 <strong id="fca-message-count">0</strong> הודעות</span>
           </div>
         </div>
         <div class="fca-content" id="fca-content-area">
           <div class="fca-empty-state">
             <div class="fca-empty-icon">🎯</div>
             <div class="fca-empty-text">מוכן לעזור!</div>
-            <div class="fca-empty-subtext">התחל את הפגישה ואקבל עצות בזמן אמת</div>
+            <div class="fca-empty-subtext">לחץ על כפתור ההקלטה למטה כדי להתחיל</div>
+          </div>
+          <div class="fca-actions">
+            <button class="fca-start-btn" id="fca-start-btn">
+              <span class="fca-start-icon">🎙️</span>
+              <span class="fca-start-text">התחל הקלטה</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1293,6 +1435,34 @@ Keep it concise, value-focused, and action-oriented.`;
       document.getElementById('fca-collapse-btn').onclick = () => this.renderWidgetMode();
       document.getElementById('fca-minimize-btn').onclick = () => this.renderCompactMode();
       document.getElementById('fca-settings-btn').onclick = () => this.openSettings();
+
+      // Setup start/stop button
+      const startBtn = document.getElementById('fca-start-btn');
+      if (startBtn) {
+        startBtn.onclick = async () => {
+          if (window.salesCoach && window.salesCoach.isListening) {
+            // Stop
+            window.salesCoach.stopListening();
+            startBtn.innerHTML = `
+              <span class="fca-start-icon">🎙️</span>
+              <span class="fca-start-text">התחל הקלטה</span>
+            `;
+            startBtn.classList.remove('recording');
+            this.updateStatus('idle');
+          } else {
+            // Start
+            const started = await window.salesCoach.startListening();
+            if (started) {
+              startBtn.innerHTML = `
+                <span class="fca-start-icon">⏹️</span>
+                <span class="fca-start-text">עצור הקלטה</span>
+              `;
+              startBtn.classList.add('recording');
+              this.updateStatus('listening');
+            }
+          }
+        };
+      }
     }
 
     /**
@@ -1302,8 +1472,11 @@ Keep it concise, value-focused, and action-oriented.`;
       const contentArea = document.getElementById('fca-content-area');
       if (!contentArea) return;
 
-      // Clear empty state
-      contentArea.innerHTML = '';
+      // Remove empty state if exists but keep the actions section
+      const emptyState = contentArea.querySelector('.fca-empty-state');
+      if (emptyState) {
+        emptyState.remove();
+      }
 
       // Create suggestion card
       const card = document.createElement('div');
@@ -1324,7 +1497,13 @@ Keep it concise, value-focused, and action-oriented.`;
       ` : ''}
     `;
 
-      contentArea.insertBefore(card, contentArea.firstChild);
+      // Insert before actions section
+      const actionsSection = contentArea.querySelector('.fca-actions');
+      if (actionsSection) {
+        contentArea.insertBefore(card, actionsSection);
+      } else {
+        contentArea.insertBefore(card, contentArea.firstChild);
+      }
 
       // Add action handlers
       card.querySelectorAll('.fca-action-btn').forEach(btn => {
@@ -1345,24 +1524,45 @@ Keep it concise, value-focused, and action-oriented.`;
      * Show transcript
      */
     showTranscript(transcript) {
-      const contentArea = document.getElementById('fca-content-area');
-      if (!contentArea) return;
+      const content = this.container.querySelector('.fca-content') || document.getElementById('fca-content-area');
+      if (!content) return;
 
-      // Create transcript item
-      const item = document.createElement('div');
-      item.className = 'fca-transcript-item';
-      item.innerHTML = `
-      <div class="fca-transcript-speaker ${transcript.speaker}">${transcript.speaker === 'client' ? 'לקוח' : 'אתה'}</div>
-      <div class="fca-transcript-text">${transcript.text}</div>
-    `;
+      // Remove empty state
+      const emptyState = content.querySelector('.fca-empty-state');
+      if (emptyState) emptyState.remove();
 
-      contentArea.insertBefore(item, contentArea.firstChild);
-
-      // Keep only last 10 transcripts
-      const items = contentArea.querySelectorAll('.fca-transcript-item');
-      if (items.length > 10) {
-        items[items.length - 1].remove();
+      // Get or create transcript container
+      let transcriptContainer = content.querySelector('.fca-transcripts');
+      if (!transcriptContainer) {
+        transcriptContainer = document.createElement('div');
+        transcriptContainer.className = 'fca-transcripts';
+        content.insertBefore(transcriptContainer, content.querySelector('.fca-actions'));
       }
+
+      // Create transcript item with speaker icon
+      const speakerIcon = transcript.speaker === 'salesperson' ? '💼' : '👤';
+      const speakerLabel = transcript.speaker === 'salesperson' ? 'אתה' : 'לקוח';
+      const speakerClass = transcript.speaker === 'salesperson' ? 'salesperson' : 'client';
+
+      const item = document.createElement('div');
+      item.className = `fca-transcript-item ${speakerClass}`;
+      item.innerHTML = `
+        <div class="fca-transcript-speaker">
+          <span class="fca-speaker-icon">${speakerIcon}</span>
+          <span class="fca-speaker-label">${speakerLabel}</span>
+        </div>
+        <div class="fca-transcript-text">${transcript.text}</div>
+      `;
+
+      transcriptContainer.appendChild(item);
+
+      // Scroll to bottom
+      content.scrollTop = content.scrollHeight;
+
+      // Update message count
+      const msgCount = transcriptContainer.querySelectorAll('.fca-transcript-item').length;
+      const msgCountEl = document.getElementById('fca-message-count');
+      if (msgCountEl) msgCountEl.textContent = msgCount;
     }
 
     /**
@@ -1391,8 +1591,22 @@ Keep it concise, value-focused, and action-oriented.`;
 
       // Update status bar if in widget/full mode
       if (this.mode !== 'compact') {
-        // Update timer, message count, etc.
-        // TODO: Implement status bar updates
+        const statusDot = document.getElementById('fca-status-dot');
+        const statusText = document.getElementById('fca-status-text');
+
+        if (statusDot) {
+          statusDot.className = `fca-status-dot ${status === 'listening' ? 'active' : ''}`;
+        }
+
+        if (statusText) {
+          const statusTexts = {
+            'idle': 'מוכן להקלטה',
+            'listening': 'מקשיב',
+            'thinking': 'מנתח...',
+            'alert': 'התראה'
+          };
+          statusText.textContent = statusTexts[status] || 'מוכן';
+        }
       }
     }
 
@@ -1512,7 +1726,19 @@ Keep it concise, value-focused, and action-oriented.`;
      * Open settings
      */
     openSettings() {
-      chrome.runtime.openOptionsPage();
+      // Content scripts can't call openOptionsPage directly
+      // Use message passing to background script
+      try {
+        chrome.runtime.sendMessage({ type: 'OPEN_SETTINGS' }, (response) => {
+          if (chrome.runtime.lastError) {
+            // Fallback: open in new tab
+            window.open(chrome.runtime.getURL('options/options.html'), '_blank');
+          }
+        });
+      } catch (error) {
+        // Fallback: open in new tab
+        window.open(chrome.runtime.getURL('options/options.html'), '_blank');
+      }
     }
 
     /**
@@ -1588,49 +1814,103 @@ Keep it concise, value-focused, and action-oriented.`;
         speech: speechRecognition,
         ai: openAI,
         config: config,
-        conversationBuffer: []
+        conversationBuffer: [],
+        isListening: false,
+        startTime: null,
+
+        // Start listening method
+        startListening: async function() {
+          if (!config.openAIKey) {
+            coach.showToast('⚠️ נדרש מפתח OpenAI בהגדרות', 'warning');
+            setTimeout(() => {
+              try {
+                chrome.runtime.sendMessage({ type: 'OPEN_SETTINGS' }, (response) => {
+                  if (chrome.runtime.lastError) {
+                    window.open(chrome.runtime.getURL('options/options.html'), '_blank');
+                  }
+                });
+              } catch (error) {
+                window.open(chrome.runtime.getURL('options/options.html'), '_blank');
+              }
+            }, 1000);
+            return false;
+          }
+
+          const started = speechRecognition.start();
+          if (started) {
+            this.isListening = true;
+            this.startTime = Date.now();
+            coach.showToast('✅ מתחיל הקלטה', 'success');
+            coach.updateStatus('listening');
+            return true;
+          }
+          return false;
+        },
+
+        // Stop listening method
+        stopListening: function() {
+          speechRecognition.stop();
+          this.isListening = false;
+          this.startTime = null;
+          coach.showToast('⏹️ הקלטה הופסקה', 'info');
+          coach.updateStatus('idle');
+        }
       };
 
-      // Start speech recognition
-      if (config.openAIKey) {
-        const started = speechRecognition.start();
-        if (started) {
-          coach.showToast('✅ Sales Coach פעיל!', 'success');
-          coach.updateStatus('listening');
-        }
-      } else {
+      // Don't auto-start, let user click the button
+      if (!config.openAIKey) {
         coach.showToast('⚠️ נדרש מפתח OpenAI בהגדרות', 'warning');
-        setTimeout(() => {
-          chrome.runtime.openOptionsPage();
-        }, 2000);
       }
+
+      // Setup timer update
+      setInterval(() => {
+        if (window.salesCoach && window.salesCoach.isListening && window.salesCoach.startTime) {
+          const elapsed = Math.floor((Date.now() - window.salesCoach.startTime) / 1000);
+          const minutes = Math.floor(elapsed / 60);
+          const seconds = elapsed % 60;
+          const timerEl = document.getElementById('fca-timer');
+          if (timerEl) {
+            timerEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+          }
+        }
+      }, 1000);
 
       console.log('✅ All-in-One Sales Coach ready!');
 
       // Handle transcript from speech recognition
-      function handleTranscript(transcript) {
+      async function handleTranscript(transcript) {
         console.log('📝 Final transcript:', transcript.text);
 
-        // Show in UI
+        // Detect speaker
+        const speaker = await window.detectSpeaker(transcript.text, window.salesCoach.conversationBuffer);
+
+        console.log(`🎤 Speaker detected: ${speaker === 'salesperson' ? 'איש מכירות' : 'לקוח'}`);
+
+        // Show in UI with correct speaker
         coach.showTranscript({
-          speaker: 'salesperson', // Default to salesperson, can be improved with AI detection
-          text: transcript.text
+          speaker: speaker,
+          text: transcript.text,
+          timestamp: Date.now()
         });
 
         // Add to conversation buffer
         window.salesCoach.conversationBuffer.push({
           timestamp: transcript.timestamp,
-          speaker: 'salesperson',
+          speaker: speaker,
           text: transcript.text
         });
 
-        // Keep last 10 messages
-        if (window.salesCoach.conversationBuffer.length > 10) {
+        // Keep last 15 messages
+        if (window.salesCoach.conversationBuffer.length > 15) {
           window.salesCoach.conversationBuffer.shift();
         }
 
-        // Get AI coaching (debounced)
-        debounceGetCoaching();
+        // Only generate coaching if CLIENT spoke
+        if (speaker === 'client') {
+          debounceGetCoaching();
+        } else {
+          console.log('⏭️ Skipping coaching - salesperson spoke');
+        }
       }
 
       // Handle partial transcript
@@ -1726,9 +2006,51 @@ Keep it concise, value-focused, and action-oriented.`;
   // Load configuration from Chrome storage
   async function loadConfig() {
     return new Promise((resolve) => {
-      chrome.storage.local.get(['openAIKey', 'model', 'language'], (result) => {
+      chrome.storage.local.get([
+        'openAIKey',
+        'assemblyAIKey',
+        'elevenLabsKey',
+        'model',
+        'language',
+        'transcriptionProvider',
+        'masterAPIKeys',
+        'currentUser',
+        'users'
+      ], (result) => {
+        let openAIKey = '';
+        let assemblyAIKey = '';
+        let elevenLabsKey = '';
+
+        // Priority 1: Master API Keys (from admin dashboard)
+        if (result.masterAPIKeys && result.masterAPIKeys.openai) {
+          openAIKey = result.masterAPIKeys.openai;
+          assemblyAIKey = result.masterAPIKeys.assemblyai || '';
+          elevenLabsKey = result.masterAPIKeys.elevenlabs || '';
+          console.log('✅ Using Master API Keys from admin');
+        }
+        // Priority 2: User-specific API Keys (if admin assigned)
+        else if (result.currentUser && result.users) {
+          const userRecord = result.users.find(u => u.email === result.currentUser.email);
+          if (userRecord && userRecord.apiKeys) {
+            openAIKey = userRecord.apiKeys.openai || '';
+            assemblyAIKey = userRecord.apiKeys.assemblyai || '';
+            elevenLabsKey = userRecord.apiKeys.elevenlabs || '';
+            console.log('✅ Using user-specific API Keys');
+          }
+        }
+        // Priority 3: Keys from options page (backward compatibility)
+        if (!openAIKey) {
+          openAIKey = result.openAIKey || '';
+          assemblyAIKey = result.assemblyAIKey || '';
+          elevenLabsKey = result.elevenLabsKey || '';
+          console.log('✅ Using keys from options page');
+        }
+
         resolve({
-          openAIKey: result.openAIKey || '',
+          openAIKey: openAIKey,
+          assemblyAIKey: assemblyAIKey,
+          elevenLabsKey: elevenLabsKey,
+          transcriptionProvider: result.transcriptionProvider || 'elevenlabs', // Default to ElevenLabs
           model: result.model || 'gpt-4-turbo-preview',
           language: result.language || 'he-IL'
         });

@@ -1,15 +1,24 @@
 {
   "manifest_version": 3,
   "name": "Sales Coach AI",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "AI sales coach with real-time transcription, waveform visualization, proactive coaching, and meeting insights",
   "permissions": [
     "activeTab",
     "tabCapture",
     "storage",
     "offscreen",
-    "scripting"
+    "scripting",
+    "identity"
   ],
+  "oauth2": {
+    "client_id": "1051177449208-2dvpubk33tr2li0us1it183b7ncufmch.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile",
+      "https://www.googleapis.com/auth/calendar.readonly"
+    ]
+  },
   "host_permissions": [
     "https://*/*",
     "http://*/*"
