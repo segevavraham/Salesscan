@@ -645,9 +645,11 @@ async function loadAPIKeys() {
 
     if (masterAPIKeys) {
       const openaiInput = document.getElementById('master-openai-key');
+      const elevenlabsInput = document.getElementById('master-elevenlabs-key');
       const assemblyaiInput = document.getElementById('master-assemblyai-key');
 
       if (openaiInput) openaiInput.value = masterAPIKeys.openai || '';
+      if (elevenlabsInput) elevenlabsInput.value = masterAPIKeys.elevenlabs || '';
       if (assemblyaiInput) assemblyaiInput.value = masterAPIKeys.assemblyai || '';
 
       adminState.apiKeys = masterAPIKeys;
@@ -662,10 +664,11 @@ async function loadAPIKeys() {
 async function saveAPIKeys() {
   try {
     const openaiKey = document.getElementById('master-openai-key')?.value.trim();
+    const elevenlabsKey = document.getElementById('master-elevenlabs-key')?.value.trim();
     const assemblyaiKey = document.getElementById('master-assemblyai-key')?.value.trim();
 
-    if (!openaiKey || !assemblyaiKey) {
-      showToast('נא למלא את כל המפתחות', 'warning');
+    if (!openaiKey) {
+      showToast('נא למלא לפחות את מפתח OpenAI', 'warning');
       return;
     }
 
@@ -677,7 +680,8 @@ async function saveAPIKeys() {
 
     const masterAPIKeys = {
       openai: openaiKey,
-      assemblyai: assemblyaiKey,
+      elevenlabs: elevenlabsKey || '',
+      assemblyai: assemblyaiKey || '',
       updatedAt: new Date().toISOString()
     };
 

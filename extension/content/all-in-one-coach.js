@@ -1994,19 +1994,23 @@ Keep it concise, value-focused, and action-oriented.`;
       chrome.storage.local.get([
         'openAIKey',
         'assemblyAIKey',
+        'elevenLabsKey',
         'model',
         'language',
+        'transcriptionProvider',
         'masterAPIKeys',
         'currentUser',
         'users'
       ], (result) => {
         let openAIKey = '';
         let assemblyAIKey = '';
+        let elevenLabsKey = '';
 
         // Priority 1: Master API Keys (from admin dashboard)
         if (result.masterAPIKeys && result.masterAPIKeys.openai) {
           openAIKey = result.masterAPIKeys.openai;
           assemblyAIKey = result.masterAPIKeys.assemblyai || '';
+          elevenLabsKey = result.masterAPIKeys.elevenlabs || '';
           console.log('✅ Using Master API Keys from admin');
         }
         // Priority 2: User-specific API Keys (if admin assigned)
@@ -2015,6 +2019,7 @@ Keep it concise, value-focused, and action-oriented.`;
           if (userRecord && userRecord.apiKeys) {
             openAIKey = userRecord.apiKeys.openai || '';
             assemblyAIKey = userRecord.apiKeys.assemblyai || '';
+            elevenLabsKey = userRecord.apiKeys.elevenlabs || '';
             console.log('✅ Using user-specific API Keys');
           }
         }
@@ -2022,12 +2027,15 @@ Keep it concise, value-focused, and action-oriented.`;
         if (!openAIKey) {
           openAIKey = result.openAIKey || '';
           assemblyAIKey = result.assemblyAIKey || '';
+          elevenLabsKey = result.elevenLabsKey || '';
           console.log('✅ Using keys from options page');
         }
 
         resolve({
           openAIKey: openAIKey,
           assemblyAIKey: assemblyAIKey,
+          elevenLabsKey: elevenLabsKey,
+          transcriptionProvider: result.transcriptionProvider || 'elevenlabs', // Default to ElevenLabs
           model: result.model || 'gpt-4-turbo-preview',
           language: result.language || 'he-IL'
         });
