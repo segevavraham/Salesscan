@@ -2,10 +2,10 @@
  * All-in-One Sales Coach Content Script
  * Combines FloatingCoachAssistant, WebSpeechRecognitionService, and OpenAIStreamingService
  * WITHOUT ES6 imports - fully self-contained
- * Version: 2.2.0 - Updated 2025-01-12 21:30:00
+ * Version: 2.2.1 - Fixed button visibility issue
  */
 
-console.log('🚀 Sales Coach AI v2.2.0 - Loaded at:', new Date().toISOString());
+console.log('🚀 Sales Coach AI v2.2.1 - Loaded at:', new Date().toISOString());
 
 // ============================================================================
 // OpenAI Streaming Service
@@ -1683,6 +1683,17 @@ Keep it concise, value-focused, and action-oriented.`;
       const result = await chrome.storage.local.get('fca-position');
       if (result['fca-position']) {
         this.position = result['fca-position'];
+
+        // Validate position is within viewport bounds
+        const maxX = window.innerWidth - 100; // Button width + margin
+        const maxY = window.innerHeight - 100; // Button height + margin
+
+        // Clamp position to valid range
+        if (this.position.x < 0) this.position.x = 24;
+        if (this.position.y < 0) this.position.y = 24;
+        if (this.position.x > maxX) this.position.x = maxX;
+        if (this.position.y > maxY) this.position.y = maxY;
+
         // Apply position if exists
         const target = this.container.querySelector('#fca-main');
         if (target && this.position.x !== null) {
@@ -1690,6 +1701,7 @@ Keep it concise, value-focused, and action-oriented.`;
           target.style.top = `${this.position.y}px`;
           target.style.right = 'auto';
           target.style.bottom = 'auto';
+          console.log(`📍 Restored position: (${this.position.x}, ${this.position.y})`);
         }
       }
     }
