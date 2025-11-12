@@ -19,17 +19,14 @@ let coachState = {
  */
 async function injectContentScript(tabId) {
   try {
-    // Inject the content script
+    // Inject the content script (v3.0 - premium-sales-coach)
     await chrome.scripting.executeScript({
       target: { tabId: tabId },
-      files: ['content/ultimate-content-script.js']
+      files: ['content/premium-sales-coach.js']
     });
 
-    // Inject the CSS
-    await chrome.scripting.insertCSS({
-      target: { tabId: tabId },
-      files: ['styles/overlay.css']
-    });
+    // Note: CSS is now built into FloatingCoachAssistant component
+    // No need to inject separate CSS file
 
     console.log('Content script injected successfully');
 
@@ -110,6 +107,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     case 'OPEN_SETTINGS':
       chrome.runtime.openOptionsPage();
+      sendResponse({ success: true });
+      return false;
+
+    case 'START_RECORDING':
+    case 'STOP_RECORDING':
+      // Legacy messages - just acknowledge them
+      // The new v3.0 uses COACH_STARTED/COACH_STOPPED instead
+      console.log('ℹ️ Legacy message received:', message.type);
       sendResponse({ success: true });
       return false;
 
