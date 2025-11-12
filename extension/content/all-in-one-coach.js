@@ -1101,6 +1101,49 @@ Keep it concise, value-focused, and action-oriented.`;
         opacity: 0.7;
       }
 
+      /* Start/Stop Button */
+      .fca-actions {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .fca-start-btn {
+        width: 100%;
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 14px 20px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+      }
+
+      .fca-start-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(34, 197, 94, 0.4);
+      }
+
+      .fca-start-btn.recording {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        animation: pulse-red 1.5s ease-in-out infinite;
+      }
+
+      @keyframes pulse-red {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+        50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+      }
+
+      .fca-start-icon {
+        font-size: 20px;
+      }
+
       /* Notification Toast */
       .fca-toast {
         position: fixed;
@@ -1224,18 +1267,24 @@ Keep it concise, value-focused, and action-oriented.`;
         </div>
         <div class="fca-status-bar">
           <div class="fca-status-item">
-            <div class="fca-status-dot active"></div>
-            <span>מקשיב</span>
+            <div class="fca-status-dot" id="fca-status-dot"></div>
+            <span id="fca-status-text">מוכן להקלטה</span>
           </div>
           <div class="fca-status-item">
-            <span>🎤 דקות: <strong>0:00</strong></span>
+            <span>🎤 זמן: <strong id="fca-timer">0:00</strong></span>
           </div>
         </div>
         <div class="fca-content">
           <div class="fca-empty-state">
-            <div class="fca-empty-icon">👂</div>
-            <div class="fca-empty-text">מקשיב לשיחה...</div>
-            <div class="fca-empty-subtext">העצות יופיעו כאן ברגע שהלקוח ידבר</div>
+            <div class="fca-empty-icon">🎙️</div>
+            <div class="fca-empty-text">מוכן להתחיל</div>
+            <div class="fca-empty-subtext">לחץ על כפתור ההקלטה למטה כדי להתחיל</div>
+          </div>
+          <div class="fca-actions">
+            <button class="fca-start-btn" id="fca-start-btn">
+              <span class="fca-start-icon">🎙️</span>
+              <span class="fca-start-text">התחל הקלטה</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1244,6 +1293,34 @@ Keep it concise, value-focused, and action-oriented.`;
       // Setup controls
       document.getElementById('fca-expand-btn').onclick = () => this.renderFullMode();
       document.getElementById('fca-minimize-btn').onclick = () => this.renderCompactMode();
+
+      // Setup start/stop button
+      const startBtn = document.getElementById('fca-start-btn');
+      if (startBtn) {
+        startBtn.onclick = async () => {
+          if (window.salesCoach && window.salesCoach.isListening) {
+            // Stop
+            window.salesCoach.stopListening();
+            startBtn.innerHTML = `
+              <span class="fca-start-icon">🎙️</span>
+              <span class="fca-start-text">התחל הקלטה</span>
+            `;
+            startBtn.classList.remove('recording');
+            this.updateStatus('idle');
+          } else {
+            // Start
+            const started = await window.salesCoach.startListening();
+            if (started) {
+              startBtn.innerHTML = `
+                <span class="fca-start-icon">⏹️</span>
+                <span class="fca-start-text">עצור הקלטה</span>
+              `;
+              startBtn.classList.add('recording');
+              this.updateStatus('listening');
+            }
+          }
+        };
+      }
     }
 
     /**
@@ -1269,21 +1346,27 @@ Keep it concise, value-focused, and action-oriented.`;
         </div>
         <div class="fca-status-bar">
           <div class="fca-status-item">
-            <div class="fca-status-dot active"></div>
-            <span>פעיל ומאזין</span>
+            <div class="fca-status-dot" id="fca-status-dot"></div>
+            <span id="fca-status-text">מוכן להקלטה</span>
           </div>
           <div class="fca-status-item">
-            <span>⏱️ <strong>0:00</strong></span>
+            <span>⏱️ <strong id="fca-timer">0:00</strong></span>
           </div>
           <div class="fca-status-item">
-            <span>💬 <strong>0</strong> הודעות</span>
+            <span>💬 <strong id="fca-message-count">0</strong> הודעות</span>
           </div>
         </div>
         <div class="fca-content" id="fca-content-area">
           <div class="fca-empty-state">
             <div class="fca-empty-icon">🎯</div>
             <div class="fca-empty-text">מוכן לעזור!</div>
-            <div class="fca-empty-subtext">התחל את הפגישה ואקבל עצות בזמן אמת</div>
+            <div class="fca-empty-subtext">לחץ על כפתור ההקלטה למטה כדי להתחיל</div>
+          </div>
+          <div class="fca-actions">
+            <button class="fca-start-btn" id="fca-start-btn">
+              <span class="fca-start-icon">🎙️</span>
+              <span class="fca-start-text">התחל הקלטה</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1293,6 +1376,34 @@ Keep it concise, value-focused, and action-oriented.`;
       document.getElementById('fca-collapse-btn').onclick = () => this.renderWidgetMode();
       document.getElementById('fca-minimize-btn').onclick = () => this.renderCompactMode();
       document.getElementById('fca-settings-btn').onclick = () => this.openSettings();
+
+      // Setup start/stop button
+      const startBtn = document.getElementById('fca-start-btn');
+      if (startBtn) {
+        startBtn.onclick = async () => {
+          if (window.salesCoach && window.salesCoach.isListening) {
+            // Stop
+            window.salesCoach.stopListening();
+            startBtn.innerHTML = `
+              <span class="fca-start-icon">🎙️</span>
+              <span class="fca-start-text">התחל הקלטה</span>
+            `;
+            startBtn.classList.remove('recording');
+            this.updateStatus('idle');
+          } else {
+            // Start
+            const started = await window.salesCoach.startListening();
+            if (started) {
+              startBtn.innerHTML = `
+                <span class="fca-start-icon">⏹️</span>
+                <span class="fca-start-text">עצור הקלטה</span>
+              `;
+              startBtn.classList.add('recording');
+              this.updateStatus('listening');
+            }
+          }
+        };
+      }
     }
 
     /**
@@ -1302,8 +1413,11 @@ Keep it concise, value-focused, and action-oriented.`;
       const contentArea = document.getElementById('fca-content-area');
       if (!contentArea) return;
 
-      // Clear empty state
-      contentArea.innerHTML = '';
+      // Remove empty state if exists but keep the actions section
+      const emptyState = contentArea.querySelector('.fca-empty-state');
+      if (emptyState) {
+        emptyState.remove();
+      }
 
       // Create suggestion card
       const card = document.createElement('div');
@@ -1324,7 +1438,13 @@ Keep it concise, value-focused, and action-oriented.`;
       ` : ''}
     `;
 
-      contentArea.insertBefore(card, contentArea.firstChild);
+      // Insert before actions section
+      const actionsSection = contentArea.querySelector('.fca-actions');
+      if (actionsSection) {
+        contentArea.insertBefore(card, actionsSection);
+      } else {
+        contentArea.insertBefore(card, contentArea.firstChild);
+      }
 
       // Add action handlers
       card.querySelectorAll('.fca-action-btn').forEach(btn => {
@@ -1348,6 +1468,12 @@ Keep it concise, value-focused, and action-oriented.`;
       const contentArea = document.getElementById('fca-content-area');
       if (!contentArea) return;
 
+      // Remove empty state if exists
+      const emptyState = contentArea.querySelector('.fca-empty-state');
+      if (emptyState) {
+        emptyState.remove();
+      }
+
       // Create transcript item
       const item = document.createElement('div');
       item.className = 'fca-transcript-item';
@@ -1356,12 +1482,24 @@ Keep it concise, value-focused, and action-oriented.`;
       <div class="fca-transcript-text">${transcript.text}</div>
     `;
 
-      contentArea.insertBefore(item, contentArea.firstChild);
+      // Insert before actions section
+      const actionsSection = contentArea.querySelector('.fca-actions');
+      if (actionsSection) {
+        contentArea.insertBefore(item, actionsSection);
+      } else {
+        contentArea.insertBefore(item, contentArea.firstChild);
+      }
 
       // Keep only last 10 transcripts
       const items = contentArea.querySelectorAll('.fca-transcript-item');
       if (items.length > 10) {
         items[items.length - 1].remove();
+      }
+
+      // Update message count
+      const messageCount = document.getElementById('fca-message-count');
+      if (messageCount) {
+        messageCount.textContent = items.length.toString();
       }
     }
 
@@ -1391,8 +1529,22 @@ Keep it concise, value-focused, and action-oriented.`;
 
       // Update status bar if in widget/full mode
       if (this.mode !== 'compact') {
-        // Update timer, message count, etc.
-        // TODO: Implement status bar updates
+        const statusDot = document.getElementById('fca-status-dot');
+        const statusText = document.getElementById('fca-status-text');
+
+        if (statusDot) {
+          statusDot.className = `fca-status-dot ${status === 'listening' ? 'active' : ''}`;
+        }
+
+        if (statusText) {
+          const statusTexts = {
+            'idle': 'מוכן להקלטה',
+            'listening': 'מקשיב',
+            'thinking': 'מנתח...',
+            'alert': 'התראה'
+          };
+          statusText.textContent = statusTexts[status] || 'מוכן';
+        }
       }
     }
 
@@ -1592,28 +1744,62 @@ Keep it concise, value-focused, and action-oriented.`;
         speech: speechRecognition,
         ai: openAI,
         config: config,
-        conversationBuffer: []
+        conversationBuffer: [],
+        isListening: false,
+        startTime: null,
+
+        // Start listening method
+        startListening: async function() {
+          if (!config.openAIKey) {
+            coach.showToast('⚠️ נדרש מפתח OpenAI בהגדרות', 'warning');
+            setTimeout(() => {
+              if (chrome.runtime && chrome.runtime.openOptionsPage) {
+                chrome.runtime.openOptionsPage();
+              } else {
+                window.open(chrome.runtime.getURL('options/options.html'), '_blank');
+              }
+            }, 1000);
+            return false;
+          }
+
+          const started = speechRecognition.start();
+          if (started) {
+            this.isListening = true;
+            this.startTime = Date.now();
+            coach.showToast('✅ מתחיל הקלטה', 'success');
+            coach.updateStatus('listening');
+            return true;
+          }
+          return false;
+        },
+
+        // Stop listening method
+        stopListening: function() {
+          speechRecognition.stop();
+          this.isListening = false;
+          this.startTime = null;
+          coach.showToast('⏹️ הקלטה הופסקה', 'info');
+          coach.updateStatus('idle');
+        }
       };
 
-      // Start speech recognition
-      if (config.openAIKey) {
-        const started = speechRecognition.start();
-        if (started) {
-          coach.showToast('✅ Sales Coach פעיל!', 'success');
-          coach.updateStatus('listening');
-        }
-      } else {
+      // Don't auto-start, let user click the button
+      if (!config.openAIKey) {
         coach.showToast('⚠️ נדרש מפתח OpenAI בהגדרות', 'warning');
-        setTimeout(() => {
-          // Open options page safely
-          if (chrome.runtime && chrome.runtime.openOptionsPage) {
-            chrome.runtime.openOptionsPage();
-          } else {
-            // Fallback: open options page manually
-            window.open(chrome.runtime.getURL('options/options.html'), '_blank');
-          }
-        }, 2000);
       }
+
+      // Setup timer update
+      setInterval(() => {
+        if (window.salesCoach && window.salesCoach.isListening && window.salesCoach.startTime) {
+          const elapsed = Math.floor((Date.now() - window.salesCoach.startTime) / 1000);
+          const minutes = Math.floor(elapsed / 60);
+          const seconds = elapsed % 60;
+          const timerEl = document.getElementById('fca-timer');
+          if (timerEl) {
+            timerEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+          }
+        }
+      }, 1000);
 
       console.log('✅ All-in-One Sales Coach ready!');
 
