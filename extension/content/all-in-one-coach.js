@@ -1723,9 +1723,17 @@ Keep it concise, value-focused, and action-oriented.`;
      * Open settings
      */
     openSettings() {
-      if (chrome.runtime && chrome.runtime.openOptionsPage) {
-        chrome.runtime.openOptionsPage();
-      } else {
+      // Content scripts can't call openOptionsPage directly
+      // Use message passing to background script
+      try {
+        chrome.runtime.sendMessage({ type: 'OPEN_SETTINGS' }, (response) => {
+          if (chrome.runtime.lastError) {
+            // Fallback: open in new tab
+            window.open(chrome.runtime.getURL('options/options.html'), '_blank');
+          }
+        });
+      } catch (error) {
+        // Fallback: open in new tab
         window.open(chrome.runtime.getURL('options/options.html'), '_blank');
       }
     }
@@ -1812,9 +1820,13 @@ Keep it concise, value-focused, and action-oriented.`;
           if (!config.openAIKey) {
             coach.showToast('⚠️ נדרש מפתח OpenAI בהגדרות', 'warning');
             setTimeout(() => {
-              if (chrome.runtime && chrome.runtime.openOptionsPage) {
-                chrome.runtime.openOptionsPage();
-              } else {
+              try {
+                chrome.runtime.sendMessage({ type: 'OPEN_SETTINGS' }, (response) => {
+                  if (chrome.runtime.lastError) {
+                    window.open(chrome.runtime.getURL('options/options.html'), '_blank');
+                  }
+                });
+              } catch (error) {
                 window.open(chrome.runtime.getURL('options/options.html'), '_blank');
               }
             }, 1000);
