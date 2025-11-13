@@ -2,10 +2,11 @@
  * All-in-One Sales Coach Content Script
  * Combines FloatingCoachAssistant, WebSpeechRecognitionService, and OpenAIStreamingService
  * WITHOUT ES6 imports - fully self-contained
- * Version: 2.2.2 - Fixed button visibility issue
+ * Version: 2.2.3 - FORCED CACHE INVALIDATION
  */
 
-console.log('🚀 Sales Coach AI v2.2.2 - Loaded at:', new Date().toISOString());
+console.log('🚀 Sales Coach AI v2.2.3 - FRESH LOAD - Loaded at:', new Date().toISOString());
+console.log('🔥🔥🔥 IF YOU SEE THIS, CACHE IS CLEARED! 🔥🔥🔥');
 
 // ============================================================================
 // OpenAI Streaming Service
